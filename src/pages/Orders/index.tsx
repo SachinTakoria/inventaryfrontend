@@ -6,7 +6,7 @@ import Loader from '../../components/Loader';
 // import TableCard from './Components/Card.user';
 import { BsArrowRightCircle, BsArrowLeftCircle } from "react-icons/bs";
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import AddOrderModel from './components/AddOrder.model';
+
 import { useGetAllOrdersQuery } from '../../provider/queries/Orders.query';
 import TableCard from './components/Card.order';
 const OrdersPage = () => {
@@ -145,7 +145,7 @@ const OrdersPage = () => {
         </table>
       </div>
 
-      <AddOrderModel visible={visible} setVisible={setVisible}  />
+      
 
 
 

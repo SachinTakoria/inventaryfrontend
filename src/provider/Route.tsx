@@ -9,7 +9,7 @@ import UserPage from "../pages/Users";
 import OrdersPage from "../pages/Orders";
 import AddProduct from "../pages/Home/AddProduct"; // ✅ Import Add Product Page
 import MyProducts from "../pages/Home/MyProducts";
-import AddOrderPage from "../pages/Orders/components/AddOrderPage";
+
 import InvoiceBuilder from "../pages/Home/InvoiceBuilder"
 import MyBills from "../pages/Home/MyBills"; // ✅ Add this at the top
 
@@ -36,10 +36,7 @@ export const Routes = createBrowserRouter([
                 path: '/orders',
                 Component: OrdersPage
             },
-            {
-                path: '/orders/add',
-                Component: AddOrderPage
-              },
+            
             {
                 path: '/add-product',
                 Component: AddProduct // ✅ Add Product Route Added
