@@ -197,7 +197,7 @@ const InvoiceBuilder: React.FC = () => {
           toPDF({ method: "open", page: { format: "A4" } });
   
           // ✅ Save invoice in DB
-          await fetch(`${BASE_URL}/invoices/create`, {
+          await fetch(`${BASE_URL}/invoices`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

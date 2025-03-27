@@ -9,6 +9,7 @@ import UserPage from "../pages/Users";
 import OrdersPage from "../pages/Orders";
 import AddProduct from "../pages/Home/AddProduct"; // ✅ Import Add Product Page
 import MyProducts from "../pages/Home/MyProducts";
+import InvoiceViewer from "../pages/Home/InvoiceViewer";
 
 import InvoiceBuilder from "../pages/Home/InvoiceBuilder"
 import MyBills from "../pages/Home/MyBills"; // ✅ Add this at the top
@@ -51,7 +52,13 @@ export const Routes = createBrowserRouter([
               {
                 path: '/my-bills',
                 Component: MyBills
+              },{
+                path: '/invoice-view/:id',
+                Component: InvoiceViewer
               },
+              
+              
+              
             {
                 path:'*',
                 Component: ErrorPage

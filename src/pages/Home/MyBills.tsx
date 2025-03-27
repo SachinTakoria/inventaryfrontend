@@ -11,7 +11,7 @@ const MyBills = () => {
       if (!token) return;
 
       try {
-        const res = await fetch("http://localhost:8000/api/v1/invoices", {
+        const res =  await fetch(`${import.meta.env.VITE_BACKEND_URL}/invoices`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
