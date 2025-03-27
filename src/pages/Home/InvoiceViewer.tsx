@@ -1,58 +1,66 @@
-import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
-import QRCode from "react-qr-code";
+import { useParams } from "react-router-dom";
 import moment from "moment";
-import { toWords } from "number-to-words";
 
 const InvoiceViewer = () => {
   const { id } = useParams();
   const [invoice, setInvoice] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    fetch(`${import.meta.env.VITE_BACKEND_URL}/invoices/${id}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => res.json())
-      .then((data) => setInvoice(data.invoice))
-      .catch((err) => console.error("Error loading invoice", err));
+    const fetchInvoice = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/orders/invoice/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data = await res.json();
+        if (data?.order) {
+          setInvoice(data.order);
+        }
+      } catch (error) {
+        console.error("Error fetching invoice:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInvoice();
   }, [id]);
 
-  if (!invoice) return <p className="p-4">Loading...</p>;
-
-  const gstAmount = invoice.withGST
-    ? (invoice.totalAmount * invoice.gstRate) / 100
-    : 0;
-  const total = invoice.totalAmount + gstAmount;
+  if (loading) return <div className="p-4 text-center">Loading invoice...</div>;
+  if (!invoice) return <div className="p-4 text-center">Invoice not found</div>;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto bg-white shadow print:bg-white">
-      <h2 className="text-center font-bold text-lg mb-4">TAX INVOICE</h2>
+    <div className="p-6 max-w-4xl mx-auto bg-white border shadow print:bg-white">
+      <h2 className="text-center text-lg font-semibold mb-2">TAX INVOICE</h2>
 
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-start border-b pb-2">
         <div>
-          <h1 className="text-2xl font-bold">DEV JYOTI TEXTILE</h1>
+          <h1 className="text-xl font-bold">DEV JYOTI TEXTILE</h1>
           <p>Shori Cloth Market, Rohtak - 124001</p>
-          <p className="text-red-600 font-semibold">GSTIN: 06BSSPJ8369N1ZN | M: 9812183950</p>
+          <p className="text-red-600 font-semibold">GSTIN: 06BSSPJ8369N1ZN</p>
+          <p>Mobile: 9812183950</p>
         </div>
-        <QRCode value={window.location.href} size={80} />
+        <div className="text-right text-sm">
+          <p><strong>Date:</strong> {moment(invoice.createdAt).format("DD MMM YYYY, hh:mm A")}</p>
+        </div>
       </div>
 
-      {/* CUSTOMER INFO */}
-      <div className="text-sm border-b pb-3 mb-3">
-        <p><strong>Name:</strong> {invoice.customerName}</p>
+      <div className="mb-4 border-b pb-2 mt-4">
+        <p><strong>Customer:</strong> {invoice.customerName}</p>
         <p><strong>Address:</strong> {invoice.customerAddress}</p>
         <p><strong>GSTIN:</strong> {invoice.customerGST}</p>
         <p><strong>State:</strong> {invoice.customerState}</p>
-        <p><strong>Date:</strong> {moment(invoice.createdAt).format("DD MMM, YYYY")}</p>
       </div>
 
-      {/* PRODUCTS TABLE */}
-      <table className="w-full border text-sm mb-4">
+      <table className="w-full text-sm border border-collapse">
         <thead className="bg-gray-100">
           <tr>
-            <th className="border p-1">Sr.</th>
             <th className="border p-1">Item</th>
             <th className="border p-1">Qty</th>
             <th className="border p-1">Price</th>
@@ -60,33 +68,52 @@ const InvoiceViewer = () => {
           </tr>
         </thead>
         <tbody>
-          {invoice.items.map((item: any, i: number) => (
+          {invoice.items?.map((item: any, i: number) => (
             <tr key={i}>
-              <td className="border text-center p-1">{i + 1}</td>
-              <td className="border text-left p-1">{item.name}</td>
-              <td className="border text-center p-1">{item.quantity}</td>
-              <td className="border text-center p-1">₹{item.price}</td>
-              <td className="border text-right p-1 font-semibold">₹{item.totalPrice.toFixed(2)}</td>
+              <td className="border p-1 text-center">{item.name}</td>
+              <td className="border p-1 text-center">{item.quantity}</td>
+              <td className="border p-1 text-center">₹{item.price}</td>
+              <td className="border p-1 text-center">₹{item.totalPrice}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      {/* TOTAL */}
-      <div className="text-sm font-semibold text-right space-y-1">
+      <div className="mt-4 text-right text-sm">
+        <p><strong>Gross:</strong> ₹{invoice.totalAmount?.toFixed(2)}</p>
         {invoice.withGST && (
           <>
-            <p>Gross: ₹{invoice.totalAmount.toFixed(2)}</p>
-            <p>CGST @{invoice.gstRate / 2}%: ₹{(gstAmount / 2).toFixed(2)}</p>
-            <p>SGST @{invoice.gstRate / 2}%: ₹{(gstAmount / 2).toFixed(2)}</p>
+            <p>CGST @{invoice.gstRate / 2}%: ₹{((invoice.totalAmount * invoice.gstRate) / 200).toFixed(2)}</p>
+            <p>SGST @{invoice.gstRate / 2}%: ₹{((invoice.totalAmount * invoice.gstRate) / 200).toFixed(2)}</p>
           </>
         )}
-        <p className="text-lg">Total: ₹{total.toFixed(2)}</p>
+        <p className="text-lg font-bold">
+          Total: ₹{invoice.totalAmountWithGST?.toFixed(2) || invoice.totalAmount?.toFixed(2)}
+        </p>
       </div>
 
-      <p className="italic text-sm mt-2">
-        In Words: <strong>{toWords(Math.round(total)).toUpperCase()} ONLY</strong>
-      </p>
+      <div className="mt-4 italic text-sm">
+        In Words: <strong>{invoice.amountInWords || ""}</strong>
+      </div>
+
+      <div className="mt-4 text-sm border-t pt-3">
+        <p><strong>Bank Name:</strong> BANDHAN BANK</p>
+        <p><strong>Account No:</strong> 10190007098780</p>
+        <p><strong>IFSC:</strong> BDBL0001825</p>
+      </div>
+
+      <div className="text-sm mt-4 flex justify-between border-t pt-3">
+        <div>
+          <p className="font-bold">Terms & Conditions:</p>
+          <p>1. Goods once sold will not be taken back.</p>
+          <p>2. All disputes are subject to Rohtak Jurisdiction.</p>
+          <p>3. E & O.E.</p>
+        </div>
+        <div className="text-right font-semibold">
+          <p>for: DEV JYOTI TEXTILE</p>
+          <p className="mt-6">Auth. Signatory</p>
+        </div>
+      </div>
     </div>
   );
 };
