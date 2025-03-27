@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { FaEdit, FaTrash, FaCheck, FaTimes } from "react-icons/fa"; // ✅ Added Icons
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
 
 const MyProducts = () => {
   const [products, setProducts] = useState<any[]>([]);
@@ -12,7 +14,7 @@ const MyProducts = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/api/v1/products/products");
+        const response =await axios.get(`${BASE_URL}/products/products`);
         setProducts(response.data);
       } catch (error) {
         console.error("Error fetching products:", error);
@@ -37,7 +39,8 @@ const filteredProducts = products.filter((product) =>
     if (!confirmDelete) return;
 
     try {
-      await axios.delete(`http://localhost:8000/api/v1/products/${productId}`);
+      await axios.delete(`${BASE_URL}/products/${productId}`);
+
       setProducts(products.filter((product) => product._id !== productId));
       alert("✅ Product deleted successfully!");
     } catch (error) {
@@ -65,7 +68,8 @@ const filteredProducts = products.filter((product) =>
 
   const handleUpdate = async () => {
     try {
-      await axios.put(`http://localhost:8000/api/v1/products/products/${editProductId}`, editData);
+      await axios.put(`${BASE_URL}/products/products/${editProductId}`, editData);
+
       setProducts(
         products.map((product) =>
           product._id === editProductId ? { ...product, ...editData } : product
@@ -112,7 +116,7 @@ const filteredProducts = products.filter((product) =>
                   {/* ✅ Image Handling */}
                   <td className="p-2">
                     <img
-                      src={product.images?.length > 0 ? `http://localhost:8000/${product.images[0]}` : "/no-image.png"}
+                      src={product.images?.length > 0 ? `${BASE_URL.replace('/api/v1', '')}/${product.images[0]}` : "/no-image.png"}
                       alt={product.productName || "Product Image"}
                       className="w-10 h-10 rounded-md object-cover"
                     />

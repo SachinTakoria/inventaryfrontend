@@ -43,9 +43,10 @@ const AddProduct = () => {
         }
 
         try {
-            const response = await axios.post("http://localhost:8000/api/v1/products", formData, {
-                headers: { "Content-Type": "multipart/form-data" }, // ✅ Fix: Use correct content type
+            const response =await axios.post(`${import.meta.env.VITE_BACKEND_URL}/products/products`, formData, {
+              headers: { "Content-Type": "multipart/form-data" },
             });
+            
 
             if (response.status === 201) {
                 alert("✅ Product Added Successfully!");

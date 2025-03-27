@@ -4,6 +4,8 @@ import { usePDF } from "react-to-pdf";
 import moment from "moment";
 import { toWords } from "number-to-words";
 import logo from "../../assets/djLogo2.png";
+const BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
 
 type EditableItem = {
   name: string;
@@ -34,9 +36,8 @@ const InvoiceBuilder: React.FC = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch(
-          "http://localhost:8000/api/v1/products/products"
-        );
+        const response = await fetch(`${BASE_URL}/products/products`);
+
         const result = await response.json();
         setAllProducts(result);
       } catch (error) {
@@ -155,8 +156,7 @@ const InvoiceBuilder: React.FC = () => {
       }));
   
     try {
-      const response = await fetch(
-        "http://localhost:8000/api/v1/orders/create-order",
+      const response = await fetch(`${BASE_URL}/orders/create-order`,
         {
           method: "POST",
           headers: {
@@ -197,7 +197,7 @@ const InvoiceBuilder: React.FC = () => {
           toPDF({ method: "open", page: { format: "A4" } });
   
           // ✅ Save invoice in DB
-          await fetch("http://localhost:8000/api/v1/invoices/create", {
+          await fetch(`${BASE_URL}/invoices/create`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
