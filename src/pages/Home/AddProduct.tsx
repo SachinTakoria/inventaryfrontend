@@ -43,7 +43,7 @@ const AddProduct = () => {
         }
 
         try {
-            const response =await axios.post(`${import.meta.env.VITE_BACKEND_URL}/products/products`, formData, {
+            const response =await axios.post(`${import.meta.env.VITE_BACKEND_URL}/products`, formData, {
               headers: { "Content-Type": "multipart/form-data" },
             });
             
