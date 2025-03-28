@@ -5,12 +5,13 @@ import MainLayout from './layout/MainLayout'
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import { useDispatch, useSelector } from 'react-redux'
-import { setUser, UserSlicePath } from './provider/slice/user.slice'
+import { setUser } from './provider/slice/user.slice'
 function App() { 
   const [loading, SetLoading] = useState(true)
   const navigate= useNavigate() 
       const dispatch = useDispatch()
-      const selector = useSelector(UserSlicePath)
+      const selector = useSelector((state: any) => state.user); 
+
 
 
   

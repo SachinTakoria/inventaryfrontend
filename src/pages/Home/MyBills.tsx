@@ -3,96 +3,99 @@ import moment from "moment";
 import { Link } from "react-router-dom";
 
 const MyBills = () => {
-  const [invoices, setInvoices] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchInvoices = async () => {
+    const fetchOrders = async () => {
       const token = localStorage.getItem("token");
       if (!token) return;
 
       try {
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/orders/all-orders`, {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/orders`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
 
         const data = await res.json();
-        if (data.success && data.orders?.length > 0) {
-          setInvoices(data.orders);
+        if (data.orders?.length > 0) {
+          setOrders(data.orders);
         } else {
-          setInvoices([]);
+          setOrders([]);
         }
       } catch (err) {
-        console.error("🔥 Error fetching invoices", err);
+        console.error("🔥 Error fetching orders", err);
       }
     };
 
-    fetchInvoices();
+    fetchOrders();
   }, []);
 
-  const groupInvoicesByDate = () => {
+  const groupOrdersByDate = () => {
     const today = moment().format("YYYY-MM-DD");
     const yesterday = moment().subtract(1, "day").format("YYYY-MM-DD");
 
-    const todayInvoices = invoices.filter((b) =>
-      moment(b.createdAt).isSame(today, "day")
+    const todayOrders = orders.filter((o) =>
+      moment(o.createdAt).isSame(today, "day")
     );
-    const yesterdayInvoices = invoices.filter((b) =>
-      moment(b.createdAt).isSame(yesterday, "day")
+    const yesterdayOrders = orders.filter((o) =>
+      moment(o.createdAt).isSame(yesterday, "day")
     );
-    const olderInvoices = invoices.filter(
-      (b) =>
-        !moment(b.createdAt).isSame(today, "day") &&
-        !moment(b.createdAt).isSame(yesterday, "day")
+    const olderOrders = orders.filter(
+      (o) =>
+        !moment(o.createdAt).isSame(today, "day") &&
+        !moment(o.createdAt).isSame(yesterday, "day")
     );
 
-    return { todayInvoices, yesterdayInvoices, olderInvoices };
+    return { todayOrders, yesterdayOrders, olderOrders };
   };
 
-  const { todayInvoices, yesterdayInvoices, olderInvoices } = groupInvoicesByDate();
+  const { todayOrders, yesterdayOrders, olderOrders } = groupOrdersByDate();
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-semibold mb-4">🧾 My Bills</h2>
+    <div className="p-6 max-w-7xl mx-auto">
+      <h2 className="text-3xl font-bold text-gray-800 mb-8">🧾 My Bills</h2>
 
       {[
-        { label: "Today", bills: todayInvoices },
-        { label: "Yesterday", bills: yesterdayInvoices },
-        { label: "Older", bills: olderInvoices },
+        { label: "Today", bills: todayOrders },
+        { label: "Yesterday", bills: yesterdayOrders },
+        { label: "Older", bills: olderOrders },
       ].map(({ label, bills }) => (
-        <div key={label} className="mb-6">
-          <h3 className="text-lg font-bold mb-2">{label}</h3>
+        <div key={label} className="mb-10">
+          <h3 className="text-2xl font-semibold mb-4 text-gray-700">{label}</h3>
+
           {bills.length === 0 ? (
-            <p className="text-gray-500">No bills</p>
+            <p className="text-gray-500">No bills available</p>
           ) : (
-            <div className="grid gap-4">
-              {bills.map((bill: any) => (
+            <div className="flex gap-5 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-100 pb-2">
+              {bills.map((bill) => (
                 <div
                   key={bill._id}
-                  className="border p-4 rounded-lg shadow bg-white"
+                  className="min-w-[280px] bg-white border border-gray-200 rounded-2xl shadow-md p-5 hover:shadow-lg transition-all"
                 >
-                  <p>
-                    <strong>Customer:</strong> {bill.customerName}
+                  <p className="mb-2 text-sm text-gray-600">
+                    <span className="font-semibold text-gray-800">Customer:</span>{" "}
+                    {bill.customerName || "N/A"}
                   </p>
-                  <p>
-                    <strong>State:</strong> {bill.customerState}
+                  <p className="mb-2 text-sm text-gray-600">
+                    <span className="font-semibold text-gray-800">State:</span>{" "}
+                    {bill.customerState || "N/A"}
                   </p>
-                  <p>
-                    <strong>Products:</strong> {bill.items?.length || 0}
+                  <p className="mb-2 text-sm text-gray-600">
+                    <span className="font-semibold text-gray-800">Products:</span>{" "}
+                    {bill.items?.length || 0}
                   </p>
-                  <p>
-                    <strong>Date:</strong>{" "}
+                  <p className="mb-4 text-sm text-gray-600">
+                    <span className="font-semibold text-gray-800">Date:</span>{" "}
                     {moment(bill.createdAt).format("DD MMM YYYY, hh:mm A")}
                   </p>
 
-                  {/* ✅ View invoice button */}
                   <Link
                     to={`/invoice-view/${bill._id}`}
-                    className="text-blue-600 font-medium mt-2 inline-block"
                     target="_blank"
+                    className="inline-block text-sm font-semibold text-blue-600 hover:underline"
                   >
-                    View Invoice
+                    🔍 View Invoice
                   </Link>
                 </div>
               ))}

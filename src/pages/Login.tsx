@@ -5,10 +5,16 @@ import { Link, useNavigate } from 'react-router-dom'
 import * as yup from 'yup'
 import { useLoginUserMutation } from '../provider/queries/Auth.query'
 import { toast } from 'sonner'
+import { useDispatch } from 'react-redux';
+import { setUser } from '../provider/slice/user.slice';
+
+
+
 import ReCAPTCHA from "react-google-recaptcha";
 const Login = () => {
 const [LoginUser,LoginUserResponse] = useLoginUserMutation()
 const navigate = useNavigate()
+const dispatch = useDispatch();
   type User={
     token:string,
     email:string,
@@ -29,33 +35,32 @@ const navigate = useNavigate()
     password: yup.string().min(5,"Password must be grather than 5 characters").required("password is required"),
   })
 
-  const OnSubmitHandler = async(e:User,{resetForm}:any)=>{
-
+  const OnSubmitHandler = async (e: User, { resetForm }: any) => {
     try {
- 
-      const { data, error }: any = await LoginUser(e)
+      const { data, error }: any = await LoginUser(e);
+  
       if (error) {
-        toast.error(error.data.message);
-        return
-
+        toast.error(error.data?.message || "Login failed");
+        return;
       }
-
-      // console.log(data,error);
-
-
+  
+      // ✅ Save token
       localStorage.setItem("token", data.token);
-
-
-      resetForm()
-      navigate("/")
+  
+      // ✅ Save user to Redux
+      dispatch(setUser(data.user)); // 👈 make sure user is coming in response
+  
+      toast.success("Login successful!");
+  
+      // ✅ Reset form & redirect
+      resetForm();
+      navigate("/");
     } catch (error: any) {
-      // toast
-      toast.error(error.message);
-
-    }finally{
-      RecaptchaRef.current.reset();
+      toast.error(error.message || "Something went wrong during login.");
+    } finally {
+      RecaptchaRef.current?.reset();
     }
-  }
+  };
 
   return (
 

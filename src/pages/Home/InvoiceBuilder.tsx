@@ -5,7 +5,7 @@ import moment from "moment";
 import { toWords } from "number-to-words";
 import logo from "../../assets/djLogo2.png";
 const BASE_URL = import.meta.env.VITE_BACKEND_URL;
-
+import { useSelector } from "react-redux";
 
 type EditableItem = {
   name: string;
@@ -32,6 +32,7 @@ const InvoiceBuilder: React.FC = () => {
 
   const [productSuggestions, setProductSuggestions] = useState<any[]>([]);
   const [allProducts, setAllProducts] = useState<any[]>([]);
+  const user = useSelector((state: any) => state?.auth?.user);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -118,7 +119,7 @@ const InvoiceBuilder: React.FC = () => {
       alert("❌ Please login again.");
       return;
     }
-  
+
     // ✅ Filter valid items with product _id
     const validItems = editableItems.filter(
       (item) =>
@@ -127,17 +128,17 @@ const InvoiceBuilder: React.FC = () => {
         item.quantity > 0 &&
         item.price > 0
     );
-  
+
     if (validItems.length === 0) {
       alert("❌ Please select valid products from the suggestion list.");
       return;
     }
-  
+
     // ✅ Filter invalid items only if name is filled but no _id
     const invalidItems = editableItems.filter(
       (item) => item.name.trim() !== "" && (!item._id || item._id.trim() === "")
     );
-  
+
     if (invalidItems.length > 0) {
       console.log("❌ Invalid Items:", invalidItems);
       alert(
@@ -145,7 +146,7 @@ const InvoiceBuilder: React.FC = () => {
       );
       return;
     }
-  
+
     const itemsToSave = editableItems
       .filter(
         (item) => item._id && item.name.trim() !== "" && item.quantity > 0
@@ -154,48 +155,53 @@ const InvoiceBuilder: React.FC = () => {
         productId: item._id, // ✅ This is the most important
         quantity: item.quantity,
       }));
-  
+
     try {
-      const response = await fetch(`${BASE_URL}/orders/create-order`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            customerName,
-            customerAddress,
-            customerGST,
-            customerState,
-            items: itemsToSave,
-          }),
-        }
-      );
-  
+      const response = await fetch(`${BASE_URL}/orders/create-order`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          customerName,
+          customerAddress,
+          customerGST,
+          customerState,
+          items: itemsToSave,
+        }),
+      });
+
       const data = await response.json();
       console.log("🧾 Server Response:", data);
-  
+
       if (response.status === 404) {
         alert("❌ API route not found: /api/v1/orders/create-order");
         return;
       }
-  
+
       if (response.status === 400) {
         alert(`❌ Stock update failed: ${data.message}`);
         return;
       }
-  
+
       if (data.success) {
         alert("✅ Invoice created & stock updated successfully!");
-  
+
         // ✅ Temporarily hide Action buttons
         setIsGeneratingPDF(true);
-  
+
         // Wait for UI update before generating PDF
-        setTimeout(async () => {
-          toPDF({ method: "open", page: { format: "A4" } });
-  
+       
+
+          if (!user || !user._id) {
+            alert("❌ User not found. Please login again.");
+            return;
+          }
+          
+          setTimeout(async () => {
+            toPDF({ method: "open", page: { format: "A4" } });
+
           // ✅ Save invoice in DB
           await fetch(`${BASE_URL}/invoices`, {
             method: "POST",
@@ -204,6 +210,7 @@ const InvoiceBuilder: React.FC = () => {
               Authorization: `Bearer ${token}`,
             },
             body: JSON.stringify({
+              user: user?._id,
               customerName,
               customerAddress,
               customerGST,
@@ -215,7 +222,7 @@ const InvoiceBuilder: React.FC = () => {
               totalAmountWithGST: totalAmount + gstAmount,
             }),
           });
-  
+
           // ✅ Reset form
           setIsGeneratingPDF(false);
           setEditableItems([
@@ -225,7 +232,7 @@ const InvoiceBuilder: React.FC = () => {
           setCustomerAddress("");
           setCustomerGST("");
           setCustomerState("");
-        }, 200); // enough time for DOM to re-render
+        }, 500); // enough time for DOM to re-render
       } else {
         alert("❌ Failed to create invoice. Try again.");
       }
@@ -234,8 +241,6 @@ const InvoiceBuilder: React.FC = () => {
       alert("❌ Something went wrong while generating the invoice.");
     }
   };
-  
-  
 
   return (
     <div className="p-4">
@@ -311,6 +316,8 @@ const InvoiceBuilder: React.FC = () => {
               contentEditable
               suppressContentEditableWarning={true}
               onBlur={(e) => setCustomerName(e.target.innerText)}
+              className="outline-none focus:outline-none border-none focus:border-none"
+
             >
               {customerName}
             </span>
@@ -321,6 +328,7 @@ const InvoiceBuilder: React.FC = () => {
               contentEditable
               suppressContentEditableWarning={true}
               onBlur={(e) => setCustomerAddress(e.target.innerText)}
+               className="outline-none focus:outline-none border-none focus:border-none"
             >
               {customerAddress}
             </span>
@@ -331,6 +339,7 @@ const InvoiceBuilder: React.FC = () => {
               contentEditable
               suppressContentEditableWarning={true}
               onBlur={(e) => setCustomerGST(e.target.innerText)}
+               className="outline-none focus:outline-none border-none focus:border-none"
             >
               {customerGST}
             </span>
@@ -341,6 +350,7 @@ const InvoiceBuilder: React.FC = () => {
               contentEditable
               suppressContentEditableWarning={true}
               onBlur={(e) => setCustomerState(e.target.innerText)}
+               className="outline-none focus:outline-none border-none focus:border-none"
             >
               {customerState}
             </span>
@@ -360,91 +370,98 @@ const InvoiceBuilder: React.FC = () => {
               <th className="border py-1">Price</th>
               <th className="border py-1">Amount</th>
               {!isGeneratingPDF && (
-      <th className="border py-1 action-header">Action</th>
-    )}
-       </tr>
+                <th className="border py-1 action-header">Action</th>
+              )}
+            </tr>
           </thead>
           <tbody>
             {editableItems.map((item, index) => (
               <tr key={index}>
                 <td className="border text-center py-1">{index + 1}</td>
                 <td className="border text-center py-1">
-  {isGeneratingPDF ? (
-    <div className="text-xs">{item.name}</div>
-  ) : (
-    <div className="relative">
-      <input
-        className="w-full text-xs px-2 py-1 border rounded-sm bg-white"
-        value={item.name}
-        onChange={(e) => handleProductNameChange(index, e.target.value)}
-      />
-      {/* Dropdown */}
-      {productSuggestions.length > 0 && index === editableItems.length - 1 && (
-        <ul className="absolute top-full left-0 mt-1 bg-white border w-full shadow z-50 max-h-40 overflow-y-auto text-left">
-          {productSuggestions.map((prod, i) => (
-            <li
-              key={i}
-              className="px-2 py-1 text-xs hover:bg-gray-100 cursor-pointer"
-              onClick={() => handleSuggestionSelect(index, prod)}
-            >
-              {prod.productName} - ₹{prod.price}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )}
-</td>
+                  {isGeneratingPDF ? (
+                    <div className="text-xs">{item.name}</div>
+                  ) : (
+                    <div className="relative">
+                      <input
+                        className="w-full text-xs px-2 py-1 border rounded-sm bg-white"
+                        value={item.name}
+                        onChange={(e) =>
+                          handleProductNameChange(index, e.target.value)
+                        }
+                      />
+                      {/* Dropdown */}
+                      {productSuggestions.length > 0 &&
+                        index === editableItems.length - 1 && (
+                          <ul className="absolute top-full left-0 mt-1 bg-white border w-full shadow z-50 max-h-40 overflow-y-auto text-left">
+                            {productSuggestions.map((prod, i) => (
+                              <li
+                                key={i}
+                                className="px-2 py-1 text-xs hover:bg-gray-100 cursor-pointer"
+                                onClick={() =>
+                                  handleSuggestionSelect(index, prod)
+                                }
+                              >
+                                {prod.productName} - ₹{prod.price}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                    </div>
+                  )}
+                </td>
 
+                <td className="border text-center py-1">
+                  {isGeneratingPDF ? (
+                    <div className="text-xs">{item.quantity}</div>
+                  ) : (
+                    <input
+                      type="number"
+                      className="w-16 text-xs px-2 py-1 border rounded-sm"
+                      value={item.quantity}
+                      onChange={(e) =>
+                        handleValueChange(
+                          index,
+                          "quantity",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  )}
+                </td>
 
-
-
-
-<td className="border text-center py-1">
-  {isGeneratingPDF ? (
-    <div className="text-xs">{item.quantity}</div>
-  ) : (
-    <input
-      type="number"
-      className="w-16 text-xs px-2 py-1 border rounded-sm"
-      value={item.quantity}
-      onChange={(e) =>
-        handleValueChange(index, "quantity", Number(e.target.value))
-      }
-    />
-  )}
-</td>
-
-
-<td className="border text-center py-1">
-  {isGeneratingPDF ? (
-    <div className="text-xs">₹{item.price}</div>
-  ) : (
-    <input
-      type="number"
-      className="w-20 text-xs px-2 py-1 border rounded-sm"
-      value={item.price}
-      onChange={(e) =>
-        handleValueChange(index, "price", Number(e.target.value))
-      }
-    />
-  )}
-</td>
-
+                <td className="border text-center py-1">
+                  {isGeneratingPDF ? (
+                    <div className="text-xs">₹{item.price}</div>
+                  ) : (
+                    <input
+                      type="number"
+                      className="w-20 text-xs px-2 py-1 border rounded-sm"
+                      value={item.price}
+                      onChange={(e) =>
+                        handleValueChange(
+                          index,
+                          "price",
+                          Number(e.target.value)
+                        )
+                      }
+                    />
+                  )}
+                </td>
 
                 <td className="border text-center py-1 font-semibold">
                   ₹{item.totalPrice.toFixed(2)}
                 </td>
                 {!isGeneratingPDF && (
-      <td className="border text-center py-1 action-cell">
-        <button onClick={() => deleteRow(index)} className="text-red-500 text-xs">❌</button>
-      </td>
-    )}
-
-
-
-
-
+                  <td className="border text-center py-1 action-cell">
+                    <button
+                      onClick={() => deleteRow(index)}
+                      className="text-red-500 text-xs"
+                    >
+                      ❌
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -504,19 +521,22 @@ const InvoiceBuilder: React.FC = () => {
 
         {/* Print Button */}
         <div className="mt-4 print:hidden">
-          <button
-            disabled={
-              editableItems.length === 0 ||
-              editableItems
-                .filter((item) => item.name.trim() !== "") // ⚠️ Blank row ignore
-                .some((item) => !item._id || item._id.trim() === "")
-            }
-            className="px-6 py-2 bg-red-500 text-white rounded disabled:bg-gray-400"
-            onClick={generateInvoiceAndUpdateStock}
-          >
-            Generate Invoice
-          </button>
-        </div>
+  {!isGeneratingPDF && (
+    <button
+      onClick={generateInvoiceAndUpdateStock}
+      className="px-6 py-2 bg-red-500 text-white rounded disabled:bg-gray-400"
+      disabled={
+        editableItems.length === 0 ||
+        editableItems
+          .filter((item) => item.name.trim() !== "")
+          .some((item) => !item._id || item._id.trim() === "")
+      }
+    >
+      Generate Invoice
+    </button>
+  )}
+</div>
+
       </div>
     </div>
   );
