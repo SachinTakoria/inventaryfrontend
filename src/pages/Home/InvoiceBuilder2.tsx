@@ -35,6 +35,7 @@ const InvoiceBuilder2: React.FC = () => {
   const [previousPending, setPreviousPending] = useState(0);
   const [oldPendingAdjusted, setOldPendingAdjusted] = useState(0);
   const [amountPaid, setAmountPaid] = useState(0);
+  const [orderData, setOrderData] = useState(null);
   // const [carryForward, setCarryForward] = useState(0);
 
   const user = useSelector((state: any) => state?.auth?.user);
@@ -363,7 +364,25 @@ const InvoiceBuilder2: React.FC = () => {
               <strong>E-Mail:</strong>rajivmittal87@gmail.com
             </p>
           </div>
-          <QRCode value={window.location.href} size={100} />
+          <div className="flex flex-col items-end text-right text-[11px] font-medium leading-snug">
+  <QRCode value={window.location.href} size={100} />
+  <div className="mt-2 text-right leading-tight">
+    <p className="font-semibold">
+      Invoice No:{" "}
+      <span className="font-normal">
+        {orderData?.invoiceNumber || "N/A"}
+      </span>
+    </p>
+    <p className="font-semibold">
+      Dated:{" "}
+      <span className="font-normal">
+        {orderData?.createdAt
+          ? moment(orderData.createdAt).format("DD MMM, YYYY")
+          : "N/A"}
+      </span>
+    </p>
+  </div>
+</div>
         </div>
 
         {/* CUSTOMER INFO */}
