@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import moment from "moment";
 
-const InvoiceViewer = () => {
+const InvoiceViewer2 = () => {
   const { id } = useParams();
   const [invoice, setInvoice] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -44,10 +44,10 @@ const InvoiceViewer = () => {
 
       <div className="flex justify-between items-start border-b pb-2">
         <div>
-          <h1 className="text-xl font-bold">DEV JYOTI TEXTILE</h1>
-          <p>Shori Cloth Market, Rohtak - 124001</p>
-          <p className="text-red-600 font-semibold">GSTIN: 06BSSPJ8369N1ZN</p>
-          <p>Mobile: 9812183950</p>
+          <h1 className="text-xl font-bold">SHREE SAI SUIT</h1>
+          <p>568, Gali Ghanteshwar, Chandni Chowk, Delhi - 110006</p>
+          <p className="text-red-600 font-semibold">GSTIN: 07AIPHM0425C1ZS</p>
+          <p>Mobile: 9971745882</p>
         </div>
         <div className="text-right text-sm">
           <p><strong>Date:</strong> {moment(invoice.createdAt).format("DD MMM YYYY, hh:mm A")}</p>
@@ -124,7 +124,7 @@ const InvoiceViewer = () => {
           <p>3. E & O.E.</p>
         </div>
         <div className="text-right font-semibold">
-          <p>for: DEV JYOTI TEXTILE</p>
+          <p>for: SHREE SAI SUIT</p>
           <p className="mt-6">Auth. Signatory</p>
         </div>
       </div>
@@ -132,4 +132,4 @@ const InvoiceViewer = () => {
   );
 };
 
-export default InvoiceViewer;
+export default InvoiceViewer2;

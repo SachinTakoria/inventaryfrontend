@@ -16,7 +16,7 @@ type EditableItem = {
   _id: string;
 };
 
-const InvoiceBuilder: React.FC = () => {
+const InvoiceBuilder2: React.FC = () => {
   const { toPDF, targetRef } = usePDF();
   const [withGST, setWithGST] = useState(false);
   const [gstRate, setGstRate] = useState(18);
@@ -46,7 +46,9 @@ const InvoiceBuilder: React.FC = () => {
 
         const result = await response.json();
         setAllProducts(result);
-      } catch (error) {}
+      } catch (error) {
+        
+      }
     };
     fetchProducts();
   }, []);
@@ -69,6 +71,7 @@ const InvoiceBuilder: React.FC = () => {
         const data = await res.json();
         setPreviousPending(data?.pendingAmount || 0);
       } catch (error) {
+        
         setPreviousPending(0); // fallback
       }
     };
@@ -207,7 +210,7 @@ const InvoiceBuilder: React.FC = () => {
           oldPendingAdjusted,
           carryForward:
             totalAmount + previousPending - (amountPaid + oldPendingAdjusted),
-          firm: "devjyoti",
+          firm: "shreesai",
         }),
       });
 
@@ -348,10 +351,16 @@ const InvoiceBuilder: React.FC = () => {
         <div className="flex justify-between items-center">
           <img src={logo} alt="Logo" className="h-24 w-24" />
           <div className="text-center w-full">
-            <h1 className="text-2xl font-bold">DEV JYOTI TEXTILE</h1>
-            <p>Shori Cloth Market, Rohtak - 124001</p>
+            <h1 className="text-2xl font-bold">SHREE SAI SUIT</h1>
+            <p>
+              568,Ground Floor Gali Ghanteshwar Katra Neel, Chandni Chowk, Delhi
+              - 110006
+            </p>
             <p className="font-semibold text-red-600">
-              GSTIN: 06BSSPJ8369N1ZN | M: 9812183950
+              GSTIN: 07AIPHM0425C1ZS | M: 9971745882
+            </p>
+            <p>
+              <strong>E-Mail:</strong>rajivmittal87@gmail.com
             </p>
           </div>
           <QRCode value={window.location.href} size={100} />
@@ -371,7 +380,6 @@ const InvoiceBuilder: React.FC = () => {
               {customerName}
             </span>
           </p>
-
           <p className="flex items-center gap-2">
             <strong>Phone:</strong>
             <span
@@ -668,13 +676,16 @@ const InvoiceBuilder: React.FC = () => {
         {/* FOOTER */}
         <div className="mt-6 text-sm border-t pt-3">
           <p>
-            <strong>Bank Name:</strong> BANDHAN BANK
+            <strong>A/c Holder Name:</strong>Shree Sai Suit
           </p>
           <p>
-            <strong>Account No:</strong> 10190007098780
+            <strong>Bank Name:</strong> IDBI OD A/C
           </p>
           <p>
-            <strong>IFSC:</strong> BDBL0001825
+            <strong>Account No:</strong> 0095651100000505
+          </p>
+          <p>
+            <strong> Branch & IFSC:</strong> Chandni Chowk & IBKL0000095
           </p>
         </div>
 
@@ -686,7 +697,7 @@ const InvoiceBuilder: React.FC = () => {
             <p>3. E & O.E.</p>
           </div>
           <div className="text-right font-semibold">
-            <p>for: DEV JYOTI TEXTILE</p>
+            <p>for: SHREE SAI SUIT</p>
             <p className="mt-6">Auth. Signatory</p>
           </div>
         </div>
@@ -713,4 +724,4 @@ const InvoiceBuilder: React.FC = () => {
   );
 };
 
-export default InvoiceBuilder;
+export default InvoiceBuilder2;

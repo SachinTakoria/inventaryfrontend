@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import moment from "moment";
 import { Link } from "react-router-dom";
 
-const MyBills = () => {
+const MyBills2 = () => {
+  // ✅ Shree Sai Bills
   const [orders, setOrders] = useState<any[]>([]);
 
   const page = 1;
-  const firm = "devjyoti";
+  const firm = "shreesai";
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -61,7 +62,9 @@ const MyBills = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <h2 className="text-3xl font-bold text-gray-800 mb-8">🧾 My Bills</h2>
+      <h2 className="text-3xl font-bold text-gray-800 mb-8">
+        🧾 My Bills - Shree Sai Suit
+      </h2>
 
       {[
         { label: "Today", bills: todayOrders },
@@ -125,4 +128,4 @@ const MyBills = () => {
   );
 };
 
-export default MyBills;
+export default MyBills2;
