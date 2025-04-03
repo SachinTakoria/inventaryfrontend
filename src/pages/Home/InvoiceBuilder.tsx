@@ -146,13 +146,15 @@ const InvoiceBuilder: React.FC = () => {
   const totalAmount = finalPrice + gstAmount;
 
   const generateInvoiceAndUpdateStock = async () => {
+    document.activeElement instanceof HTMLElement && document.activeElement.blur();
+   
+
     const token = localStorage.getItem("token");
     if (!token) {
       alert("❌ Please login again.");
       return;
     }
-
-    // ✅ Filter valid items with product _id
+  
     const validItems = editableItems.filter(
       (item) =>
         item._id &&
@@ -160,37 +162,34 @@ const InvoiceBuilder: React.FC = () => {
         item.quantity > 0 &&
         item.price > 0
     );
-
+  
     if (validItems.length === 0) {
       alert("❌ Please select valid products from the suggestion list.");
       return;
     }
-
-    // ✅ Filter invalid items only if name is filled but no _id
+  
     const invalidItems = editableItems.filter(
       (item) => item.name.trim() !== "" && (!item._id || item._id.trim() === "")
     );
-
+  
     if (invalidItems.length > 0) {
-      alert(
-        "❌ Some items were not selected from product suggestions. Please fix them."
-      );
+      alert("❌ Some items were not selected from product suggestions. Please fix them.");
       return;
     }
-
+  
     const itemsToSave = editableItems
       .filter(
         (item) => item._id && item.name.trim() !== "" && item.quantity > 0
       )
       .map((item) => ({
-        productId: item._id, // ✅ This is the most important
+        productId: item._id,
         quantity: item.quantity,
         name: item.name,
         price: item.price,
         totalPrice: item.totalPrice,
         hsn: item.hsn || "",
       }));
-
+  
     try {
       const response = await fetch(`${BASE_URL}/orders/create-order`, {
         method: "POST",
@@ -206,74 +205,83 @@ const InvoiceBuilder: React.FC = () => {
           customerState,
           items: itemsToSave,
           amountPaid,
+          withGST,              // ✅ Add this line
+          gstRate,              // ✅ And this
+          totalAmount,
           oldPendingAdjusted,
           carryForward:
             totalAmount + previousPending - (amountPaid + oldPendingAdjusted),
           firm: "devjyoti",
         }),
       });
-
+  
       const data = await response.json();
-
+  
       if (response.status === 404) {
         alert("❌ API route not found: /api/v1/orders/create-order");
         return;
       }
-
+  
       if (response.status === 400) {
         alert(`❌ Stock update failed: ${data.message}`);
         return;
       }
-
+  
       if (data.success) {
         alert("✅ Invoice created & stock updated successfully!");
-
-        if (data?.order) {
-          setOrderData(data.order); // ✅ yeh line add kar
+  
+        // Save invoice in DB and include invoiceNumber + createdAt
+        const invoiceRes = await fetch(`${BASE_URL}/invoices`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            user: user?._id,
+            customerName,
+            customerAddress,
+            customerGST,
+            customerPhone,
+            customerState,
+            items: editableItems.map((item) => ({
+              name: item.name,
+              price: item.price,
+              quantity: item.quantity,
+              totalPrice: item.totalPrice,
+              hsn: item.hsn,
+            })),
+            totalAmount: totalAmount,
+            withGST,
+            gstRate,
+            totalAmountWithGST: totalAmount + gstAmount,
+          }),
+        });
+  
+        const invoiceData = await invoiceRes.json();
+        
+        
+  
+        if (data?.order && invoiceData?.invoice) {
+          setOrderData({
+            ...data.order,
+            invoiceNumber: invoiceData.invoice.invoiceNumber,
+            createdAt: invoiceData.invoice.createdAt,
+          });
         }
         
-
-        // ✅ Temporarily hide Action buttons
+  
         setIsGeneratingPDF(true);
-
-        // Wait for UI update before generating PDF
-
+  
         if (!user || !user._id) {
           alert("❌ User not found. Please login again.");
           return;
         }
-
+  
         setTimeout(async () => {
           toPDF({ method: "open", page: { format: "A4" } });
-
-          // ✅ Save invoice in DB
-          await fetch(`${BASE_URL}/invoices`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              user: user?._id,
-              customerName,
-              customerAddress,
-              customerGST,
-              customerState,
-              items: editableItems.map((item) => ({
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-                totalPrice: item.totalPrice,
-                hsn: item.hsn,
-              })),
-              totalAmount: totalAmount,
-              withGST,
-              gstRate,
-              totalAmountWithGST: totalAmount + gstAmount,
-            }),
-          });
-
-          // ✅ Reset form
+  
+          // Reset form
           setIsGeneratingPDF(false);
           setEditableItems([
             {
@@ -285,12 +293,12 @@ const InvoiceBuilder: React.FC = () => {
               _id: "",
             },
           ]);
-
+  
           setCustomerName("");
           setCustomerAddress("");
           setCustomerGST("");
           setCustomerState("");
-        }, 500); // enough time for DOM to re-render
+        }, 500);
       } else {
         alert("❌ Failed to create invoice. Try again.");
       }
@@ -364,20 +372,12 @@ const InvoiceBuilder: React.FC = () => {
           <div className="flex flex-col items-end text-right text-[11px] font-medium leading-snug">
   <QRCode value={window.location.href} size={100} />
   <div className="mt-2 text-right leading-tight">
-    <p className="font-semibold">
-      Invoice No:{" "}
-      <span className="font-normal">
-        {orderData?.invoiceNumber || "N/A"}
-      </span>
-    </p>
-    <p className="font-semibold">
-      Dated:{" "}
-      <span className="font-normal">
-        {orderData?.createdAt
-          ? moment(orderData.createdAt).format("DD MMM, YYYY")
-          : "N/A"}
-      </span>
-    </p>
+  {/* <p>
+  Invoice No: <strong>{orderData?.invoiceNumber || "N/A"}</strong>
+</p> */}
+
+<p>Dated: {moment(orderData?.createdAt).format("DD MMM, YYYY")}</p>
+
   </div>
 </div>
 
@@ -400,7 +400,6 @@ const InvoiceBuilder: React.FC = () => {
               {customerName}
             </span>
           </p>
-
           <p className="flex items-center gap-2">
             <strong>Phone:</strong>
             <span
@@ -438,7 +437,7 @@ const InvoiceBuilder: React.FC = () => {
                     const data = await res.json();
                     setPreviousPending(data?.pendingAmount || 0);
                   } catch (err) {
-                    console.error("Error fetching pending:", err);
+                    
                     setPreviousPending(0);
                   }
                 }}
@@ -448,6 +447,9 @@ const InvoiceBuilder: React.FC = () => {
               </button>
             )}
           </p>
+
+
+
 
           <p>
             <strong>Address:</strong>{" "}
@@ -482,9 +484,9 @@ const InvoiceBuilder: React.FC = () => {
               {customerState}
             </span>
           </p>
-          <p>
+          {/* <p>
             <strong>Date:</strong> {moment().format("DD MMM, YYYY")}
-          </p>
+          </p> */}
         </div>
 
         {/* PRODUCT TABLE */}

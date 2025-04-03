@@ -67,7 +67,7 @@ const ShowAndPrintModel = ({ setVisible, visible, id }: any) => {
         const result = await response.json();
         setAllProducts(result);
       } catch (error) {
-        console.error("Error fetching product list:", error);
+     
       }
     };
     fetchProducts();

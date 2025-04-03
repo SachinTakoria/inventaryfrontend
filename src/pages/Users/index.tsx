@@ -15,7 +15,7 @@ const UserPage = () => {
     
     const [SearchParams] = useSearchParams();
   const [Search, setSearch] = useState(SearchParams.get("query") || '');
-  // console.log(query);
+  
     
   const { isLoading, data , isFetching } = useGetAllConsumersQuery({ query: SearchParams.get("query") || '', page: SearchParams.get("page")||1 })
 

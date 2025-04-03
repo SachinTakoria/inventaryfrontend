@@ -6,14 +6,14 @@ const AddProduct = () => {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
   const [brand, setBrand] = useState("");
-  const [stock, setStock] = useState("");
+  // const [stock, setStock] = useState("");
   const [warehouse, setWarehouse] = useState("");
   const [supplier, setSupplier] = useState("");
   const [status, setStatus] = useState("Received");
   const [image, setImage] = useState<FileList | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [receivedStock, setReceivedStock] = useState("");
+  // const [receivedStock, setReceivedStock] = useState("");
   const [categories, setCategories] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [newCategory, setNewCategory] = useState("");
@@ -27,7 +27,7 @@ const AddProduct = () => {
       const res = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/categories`);
       setCategories(res.data);
     } catch (err) {
-      console.error("Failed to load categories", err);
+     
     }
   };
 
@@ -68,9 +68,9 @@ const AddProduct = () => {
     formData.append("price", price.toString());
     formData.append("category", category);
     formData.append("brand", brand);
-    formData.append("receivedStock", receivedStock.toString());
+    // formData.append("receivedStock", receivedStock.toString());
 
-    formData.append("stock", stock.toString());
+    // formData.append("stock", stock.toString());
     formData.append("warehouse", warehouse);
     formData.append("supplier", supplier);
     formData.append("status", status);
@@ -90,8 +90,8 @@ const AddProduct = () => {
         setPrice("");
         setCategory("");
         setBrand("");
-        setReceivedStock("")
-        setStock("");
+        // setReceivedStock("")
+        // setStock("");
         setWarehouse("");
         setSupplier("");
         setStatus("Received");
@@ -137,7 +137,7 @@ const AddProduct = () => {
           <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} className="w-full p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" required />
         </div>
 
-        <div>
+        {/* <div>
   <label className="block mb-1 text-sm font-medium text-gray-600">Received Stock*</label>
   <input
     type="number"
@@ -146,13 +146,13 @@ const AddProduct = () => {
     className="w-full p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
     required
   />
-</div>
+</div> */}
 
 
-        <div>
+        {/* <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">Stock Quantity*</label>
           <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} className="w-full p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" required />
-        </div>
+        </div> */}
 
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">Price*</label>

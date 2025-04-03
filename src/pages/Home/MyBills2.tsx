@@ -34,7 +34,7 @@ const MyBills2 = () => {
           setOrders([]);
         }
       } catch (err) {
-        console.error("Error fetching Shree Sai bills:", err);
+      
       }
     };
 

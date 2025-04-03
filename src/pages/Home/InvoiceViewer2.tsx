@@ -24,7 +24,7 @@ const InvoiceViewer2 = () => {
           setInvoice(data.order);
         }
       } catch (error) {
-        console.error("Error fetching invoice:", error);
+       
       } finally {
         setLoading(false);
       }

@@ -27,7 +27,7 @@ const Model = ({ visible, setVisible }:any) => {
 
     const onSubmitHandler = async(e:any,{resetForm}:any)=>{
             try{
-              // console.log(e)
+              
               const {data,error }:any = await RegisterConsumer(e)
 
               if (error) {

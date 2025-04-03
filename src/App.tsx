@@ -24,14 +24,13 @@ function App() {
           }
         })
 
-        console.log(data.user);
         dispatch(setUser(data.user));
 
 
         SetLoading(false)
         return
       } catch (error) {
-        console.log(error);
+     
 
         navigate("/login")
         return

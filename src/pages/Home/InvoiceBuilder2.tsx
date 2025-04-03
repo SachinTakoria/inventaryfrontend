@@ -367,20 +367,14 @@ const InvoiceBuilder2: React.FC = () => {
           <div className="flex flex-col items-end text-right text-[11px] font-medium leading-snug">
   <QRCode value={window.location.href} size={100} />
   <div className="mt-2 text-right leading-tight">
-    <p className="font-semibold">
+    {/* <p className="font-semibold">
       Invoice No:{" "}
       <span className="font-normal">
         {orderData?.invoiceNumber || "N/A"}
       </span>
-    </p>
-    <p className="font-semibold">
-      Dated:{" "}
-      <span className="font-normal">
-        {orderData?.createdAt
-          ? moment(orderData.createdAt).format("DD MMM, YYYY")
-          : "N/A"}
-      </span>
-    </p>
+    </p> */}
+   <p>Dated: {moment(orderData?.createdAt).format("DD MMM, YYYY")}</p>
+   
   </div>
 </div>
         </div>
@@ -436,7 +430,7 @@ const InvoiceBuilder2: React.FC = () => {
                     const data = await res.json();
                     setPreviousPending(data?.pendingAmount || 0);
                   } catch (err) {
-                    console.error("Error fetching pending:", err);
+                   
                     setPreviousPending(0);
                   }
                 }}
@@ -480,9 +474,9 @@ const InvoiceBuilder2: React.FC = () => {
               {customerState}
             </span>
           </p>
-          <p>
+          {/* <p>
             <strong>Date:</strong> {moment().format("DD MMM, YYYY")}
-          </p>
+          </p> */}
         </div>
 
         {/* PRODUCT TABLE */}

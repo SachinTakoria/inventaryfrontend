@@ -28,7 +28,7 @@ const Inventory = () => {
       );
       setProducts(data);
     } catch (err) {
-      console.error("Failed to fetch products", err);
+     
     }
   };
 
@@ -42,7 +42,7 @@ const Inventory = () => {
       );
       setPurchaseHistory((prev) => ({ ...prev, [productId]: sorted }));
     } catch (err) {
-      console.error("Failed to fetch purchase history", err);
+     
     }
   };
 
@@ -65,25 +65,43 @@ const Inventory = () => {
         ...newPurchase,
         product: productId,
       });
-      setNewPurchase({
-        supplier: "",
-        quantity: 0,
-        price: 0,
-        date: "",
-        remark: "",
-      });
+  
+      // Clear form
+      setNewPurchase({ supplier: "", quantity: 0, price: 0, date: "", remark: "" });
       setAddingFor(null);
-      await fetchProducts();
+  
+      // Refetch updated product list
+      await fetchProducts();  // yahi stock ko refresh kar dega UI me
+  
+      // Also refetch updated purchase history
       await fetchPurchaseHistory(productId);
     } catch (err) {
-      console.error("Failed to add purchase", err);
+  
     }
   };
+  
+  
 
   const filteredProducts = products.filter((product) =>
     product.productName.toLowerCase().includes(search.toLowerCase()) ||
     product.category.toLowerCase().includes(search.toLowerCase())
   );
+
+
+  const handleDeletePurchase = async (purchaseId: string, productId: string, quantity: number) => {
+    const confirm = window.confirm("Are you sure you want to delete this purchase?");
+    if (!confirm) return;
+  
+    try {
+      await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/purchases/${purchaseId}`);
+      await fetchProducts();
+      await fetchPurchaseHistory(productId);
+    } catch (err) {
+     
+    }
+  };
+  
+  
 
   return (
     <div className="p-4">
@@ -157,6 +175,12 @@ const Inventory = () => {
                             <td className="p-2">₹{purchase.price}</td>
                             <td className="p-2">{new Date(purchase.date).toLocaleDateString()}</td>
                             <td className="p-2">{purchase.remark || "-"}</td>
+                            <td className="text-right">
+  <button onClick={() => handleDeletePurchase(purchase._id, product._id, purchase.quantity)}>
+    🗑️
+  </button>
+</td>
+
                           </tr>
                         ))}
                       </tbody>

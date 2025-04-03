@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
 import moment from "moment";
 
-const InvoiceViewer = () => {
-  const { id } = useParams();
+interface Props {
+  invoiceId: string;
+}
+
+const InvoiceViewer = ({ invoiceId }: Props) => {
   const [invoice, setInvoice] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -12,7 +14,7 @@ const InvoiceViewer = () => {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/orders/invoice/${id}`,
+          `${import.meta.env.VITE_BACKEND_URL}/orders/invoice/${invoiceId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -24,19 +26,20 @@ const InvoiceViewer = () => {
           setInvoice(data.order);
         }
       } catch (error) {
-        console.error("Error fetching invoice:", error);
+      
       } finally {
         setLoading(false);
       }
     };
     fetchInvoice();
-  }, [id]);
+  }, [invoiceId]);
 
   if (loading) return <div className="p-4 text-center">Loading invoice...</div>;
   if (!invoice) return <div className="p-4 text-center">Invoice not found</div>;
 
+
   return (
-    <div className="p-6 max-w-4xl mx-auto bg-white border shadow print:bg-white">
+    <div id="printable-invoice" className="p-6 max-w-4xl mx-auto bg-white border shadow print:bg-white">
       <h2 className="text-center text-lg font-semibold mb-2">TAX INVOICE</h2>
       <p className="text-center text-sm mb-4">
         <strong>Invoice No:</strong> {invoice.invoiceNumber || "N/A"}
@@ -86,17 +89,17 @@ const InvoiceViewer = () => {
 
       <div className="mt-4 text-right text-sm">
         <p><strong>Gross:</strong> ₹{invoice.totalAmount?.toFixed(2)}</p>
-        {invoice.withGST && (
-          <>
-            <p>CGST @{invoice.gstRate / 2}%: ₹{((invoice.totalAmount * invoice.gstRate) / 200).toFixed(2)}</p>
-            <p>SGST @{invoice.gstRate / 2}%: ₹{((invoice.totalAmount * invoice.gstRate) / 200).toFixed(2)}</p>
-          </>
-        )}
+        {(invoice.withGST || invoice.gstRate > 0) && (
+  <>
+    <p>CGST @{invoice.gstRate / 2}%: ₹{((invoice.totalAmount * invoice.gstRate) / 200).toFixed(2)}</p>
+    <p>SGST @{invoice.gstRate / 2}%: ₹{((invoice.totalAmount * invoice.gstRate) / 200).toFixed(2)}</p>
+  </>
+)}
+
         <p className="text-lg font-bold">
           Total: ₹{invoice.totalAmountWithGST?.toFixed(2) || invoice.totalAmount?.toFixed(2)}
         </p>
 
-        {/* ✅ Payment Summary Section */}
         <div className="mt-3 text-sm border-t pt-3 text-right">
           <p><strong>Previous Pending Adjusted:</strong> ₹{invoice.oldPendingAdjusted || 0}</p>
           <p><strong>Amount Paid:</strong> ₹{invoice.amountPaid || 0}</p>

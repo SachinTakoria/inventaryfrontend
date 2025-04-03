@@ -54,7 +54,7 @@ const OrdersPage = () => {
 
     }
 
-    console.log(page);
+   
 
 
     navigate(`/orders` + string);

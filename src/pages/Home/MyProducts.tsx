@@ -1,4 +1,3 @@
-
 // ✅ Full Editable MyProducts.tsx – Clean UI, All Fields from AddProduct.tsx
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -22,7 +21,7 @@ const MyProducts = () => {
       const response = await axios.get(`${BASE_URL}/products/products`);
       setProducts(response.data);
     } catch (error) {
-      console.error("Error fetching products:", error);
+   
     }
   };
 
@@ -31,7 +30,7 @@ const MyProducts = () => {
       const res = await axios.get(`${BASE_URL}/categories`);
       setCategories(res.data);
     } catch (err) {
-      console.error("Failed to load categories", err);
+    
     }
   };
 
@@ -49,7 +48,7 @@ const MyProducts = () => {
       setProducts(products.filter((product) => product._id !== productId));
       alert("✅ Product deleted successfully!");
     } catch (error) {
-      console.error("Error deleting product:", error);
+    
       alert("❌ Failed to delete product. Try again!");
     }
   };
@@ -76,7 +75,7 @@ const MyProducts = () => {
       alert("✅ Product updated successfully!");
       setEditProductId(null);
     } catch (error) {
-      console.error("Error updating product:", error);
+     
       alert("❌ Failed to update product. Try again!");
     }
   };
@@ -101,7 +100,6 @@ const MyProducts = () => {
               <th className="p-2 text-left">NAME</th>
               <th className="p-2 text-left">CATEGORY</th>
               <th className="p-2 text-left">BRAND</th>
-              <th className="p-2 text-left">RECEIVED</th>
               <th className="p-2 text-left">STOCK</th>
               <th className="p-2 text-left">PRICE</th>
               <th className="p-2 text-left">WAREHOUSE</th>
@@ -145,16 +143,14 @@ const MyProducts = () => {
                   </td>
 
                   <td className="p-2">
-                    {editProductId === product._id ? (
-                      <input type="number" value={editData.receivedStock} onChange={(e) => handleInputChange(e, "receivedStock")} className="input" />
-                    ) : product.receivedStock}
-                  </td>
+  {product.stock}
+  <br />
+  <small className="text-xs text-gray-400 italic">
+    (auto-updated from purchases & sales)
+  </small>
+</td>
 
-                  <td className="p-2">
-                    {editProductId === product._id ? (
-                      <input type="number" value={editData.stock} onChange={(e) => handleInputChange(e, "stock")} className="input" />
-                    ) : product.stock}
-                  </td>
+
 
                   <td className="p-2 font-semibold">
                     {editProductId === product._id ? (
@@ -199,7 +195,7 @@ const MyProducts = () => {
                 </tr>
               ))
             ) : (
-              <tr><td colSpan={11} className="text-center p-4">No products found.</td></tr>
+              <tr><td colSpan={10} className="text-center p-4">No products found.</td></tr>
             )}
           </tbody>
         </table>

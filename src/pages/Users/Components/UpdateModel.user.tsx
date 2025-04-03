@@ -11,7 +11,7 @@ const UpdateModel = ({ visible ,setVisible,_id}:any) => {
 
     
     const {isLoading,data } = useGetConsumersQuery(_id)
-            // console.log(data);
+          
     const [updateConsumer,updateConsumerResponse] = useUpdateConsumerMutation()        
     if (isLoading){
                 return <Loader/>
@@ -36,7 +36,7 @@ const UpdateModel = ({ visible ,setVisible,_id}:any) => {
 
     const onSubmitHandler = async (e: any, { setValues }: any) => {
         try {
-            console.log(e)
+          
             const { data, error }: any = await updateConsumer({ data: e, _id: _id })
 
             if (error) {
@@ -57,7 +57,7 @@ const UpdateModel = ({ visible ,setVisible,_id}:any) => {
             // resetForm()
             setVisible(false)
         } catch (error: any) {
-            console.log(error);
+           
             
             toast.error(error.message)
         } 

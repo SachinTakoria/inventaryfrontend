@@ -31,7 +31,7 @@ const HomePage = () => {
         });
         setStats(data);
       } catch (err) {
-        console.error("Error fetching stats:", err);
+    
       }
     };
 
@@ -49,7 +49,7 @@ const HomePage = () => {
       });
       setDateSale(data.totalSale);
     } catch (error) {
-      console.error("Error fetching date-wise sale:", error);
+     
     }
   };
 
@@ -59,7 +59,7 @@ const HomePage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card title="Today's Sale" value={`₹${stats.todaySale}`} />
         <Card title="Yesterday's Sale" value={`₹${stats.yesterdaySale}`} />
-        <Card title="Total Users" value={stats.totalUsers} />
+        {/* <Card title="Total Users" value={stats.totalUsers} /> */}
         <Card title="Total Orders" value={stats.totalOrders} />
       </div>
 

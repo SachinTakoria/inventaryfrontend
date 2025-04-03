@@ -36,7 +36,7 @@ const Register = () => {
   })
 
   const OnSubmitHandler = async (e: User, { resetForm }: any) => {
-        // console.log({e});
+        
 
         try {
           const {data,error }:any = await registerUser(e)
@@ -48,7 +48,7 @@ const Register = () => {
                 
               }
 
-              console.log(data,error);
+              
 
 
               localStorage.setItem("token",data.token);
