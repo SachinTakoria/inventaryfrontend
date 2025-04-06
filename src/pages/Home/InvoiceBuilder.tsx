@@ -146,15 +146,15 @@ const InvoiceBuilder: React.FC = () => {
   const totalAmount = finalPrice + gstAmount;
 
   const generateInvoiceAndUpdateStock = async () => {
-    document.activeElement instanceof HTMLElement && document.activeElement.blur();
-   
+    document.activeElement instanceof HTMLElement &&
+      document.activeElement.blur();
 
     const token = localStorage.getItem("token");
     if (!token) {
       alert("❌ Please login again.");
       return;
     }
-  
+
     const validItems = editableItems.filter(
       (item) =>
         item._id &&
@@ -162,21 +162,23 @@ const InvoiceBuilder: React.FC = () => {
         item.quantity > 0 &&
         item.price > 0
     );
-  
+
     if (validItems.length === 0) {
       alert("❌ Please select valid products from the suggestion list.");
       return;
     }
-  
+
     const invalidItems = editableItems.filter(
       (item) => item.name.trim() !== "" && (!item._id || item._id.trim() === "")
     );
-  
+
     if (invalidItems.length > 0) {
-      alert("❌ Some items were not selected from product suggestions. Please fix them.");
+      alert(
+        "❌ Some items were not selected from product suggestions. Please fix them."
+      );
       return;
     }
-  
+
     const itemsToSave = editableItems
       .filter(
         (item) => item._id && item.name.trim() !== "" && item.quantity > 0
@@ -189,7 +191,7 @@ const InvoiceBuilder: React.FC = () => {
         totalPrice: item.totalPrice,
         hsn: item.hsn || "",
       }));
-  
+
     try {
       const response = await fetch(`${BASE_URL}/orders/create-order`, {
         method: "POST",
@@ -205,8 +207,8 @@ const InvoiceBuilder: React.FC = () => {
           customerState,
           items: itemsToSave,
           amountPaid,
-          withGST,              // ✅ Add this line
-          gstRate,              // ✅ And this
+          withGST, // ✅ Add this line
+          gstRate, // ✅ And this
           totalAmount,
           oldPendingAdjusted,
           carryForward:
@@ -214,22 +216,22 @@ const InvoiceBuilder: React.FC = () => {
           firm: "devjyoti",
         }),
       });
-  
+
       const data = await response.json();
-  
+
       if (response.status === 404) {
         alert("❌ API route not found: /api/v1/orders/create-order");
         return;
       }
-  
+
       if (response.status === 400) {
         alert(`❌ Stock update failed: ${data.message}`);
         return;
       }
-  
+
       if (data.success) {
         alert("✅ Invoice created & stock updated successfully!");
-  
+
         // Save invoice in DB and include invoiceNumber + createdAt
         const invoiceRes = await fetch(`${BASE_URL}/invoices`, {
           method: "POST",
@@ -257,11 +259,9 @@ const InvoiceBuilder: React.FC = () => {
             totalAmountWithGST: totalAmount + gstAmount,
           }),
         });
-  
+
         const invoiceData = await invoiceRes.json();
-        
-        
-  
+
         if (data?.order && invoiceData?.invoice) {
           setOrderData({
             ...data.order,
@@ -269,18 +269,17 @@ const InvoiceBuilder: React.FC = () => {
             createdAt: invoiceData.invoice.createdAt,
           });
         }
-        
-  
+
         setIsGeneratingPDF(true);
-  
+
         if (!user || !user._id) {
           alert("❌ User not found. Please login again.");
           return;
         }
-  
+
         setTimeout(async () => {
           toPDF({ method: "open", page: { format: "A4" } });
-  
+
           // Reset form
           setIsGeneratingPDF(false);
           setEditableItems([
@@ -293,7 +292,7 @@ const InvoiceBuilder: React.FC = () => {
               _id: "",
             },
           ]);
-  
+
           setCustomerName("");
           setCustomerAddress("");
           setCustomerGST("");
@@ -354,140 +353,148 @@ const InvoiceBuilder: React.FC = () => {
       {/* INVOICE BODY */}
       <div
         ref={targetRef}
-        className="p-6 border border-gray-300 print:bg-white"
-        style={{ backgroundColor: getBackgroundColor() }}
+        className="p-6 border border-black print:bg-white"
+        style={{
+          backgroundColor: getBackgroundColor(),
+          border: "2px solid black",
+          padding: "20px",
+        }}
       >
-        <h2 className="text-sm font-bold text-center mb-6">TAX INVOICE</h2>
+        <h2 className="text-md font-bold text-center mb-6 border-b border-black pb-2">
+          TAX INVOICE
+        </h2>
 
-        {/* HEADER */}
-        <div className="flex justify-between items-center">
-          <img src={logo} alt="Logo" className="h-24 w-24" />
-          <div className="text-center w-full">
-            <h1 className="text-2xl font-bold">DEV JYOTI TEXTILE</h1>
-            <p>Shori Cloth Market, Rohtak - 124001</p>
-            <p className="font-semibold text-red-600">
-              GSTIN: 06BSSPJ8369N1ZN | M: 9812183950
-            </p>
+       {/* HEADER - Updated Three Column Layout */}
+        {/* HEADER WITH INVOICE META */}
+              {/* HEADER WITH INVOICE META */}
+              <div className="border border-black p-4 mb-4">
+          <div className="flex justify-between items-start">
+            {/* Logo - Left */}
+            <div className="w-1/4">
+              <img src={logo} alt="Logo" className="h-20 w-20 object-contain" />
+            </div>
+
+            {/* Firm Info - Center */}
+            <div className="w-2/4 text-center space-y-1">
+              <h1 className="text-3xl font-bold tracking-wide">DEV JYOTI TEXTILE</h1>
+              <p className="text-base">Shori Cloth Market, Rohtak - 124001</p>
+              <p className="text-base">
+                <span className="font-semibold text-red-600">GSTIN:</span>{" "}
+                <span className="text-red-600">06BSSPJ8369N1ZN</span> &nbsp;|&nbsp;
+                <span className="font-semibold text-red-600">M:</span>{" "}
+                <span className="text-red-600">9812183950</span>
+              </p>
+            </div>
+
+            {/* Invoice Info - Right */}
+            <div className="w-1/4 text-xs text-right  p-2">
+              <p><strong>Invoice No:</strong> {orderData?.invoiceNumber || "--"}</p>
+              <p><strong>Dated:</strong> {moment(orderData?.createdAt).format("DD MMM, YYYY")}</p>
+            </div>
           </div>
-          <div className="flex flex-col items-end text-right text-[11px] font-medium leading-snug">
-  <QRCode value={window.location.href} size={100} />
-  <div className="mt-2 text-right leading-tight">
-  {/* <p>
-  Invoice No: <strong>{orderData?.invoiceNumber || "N/A"}</strong>
-</p> */}
 
-<p>Dated: {moment(orderData?.createdAt).format("DD MMM, YYYY")}</p>
-
-  </div>
-</div>
-
-
-
-
-        </div>
-
-        {/* CUSTOMER INFO */}
-        <div className="mt-6 text-sm border-b pb-2">
-          <h3 className="font-semibold mb-1">Consignee (Ship To)</h3>
-          <p>
-            <strong>Name:</strong>{" "}
-            <span
-              contentEditable
-              suppressContentEditableWarning={true}
-              onBlur={(e) => setCustomerName(e.target.innerText)}
-              className="outline-none focus:outline-none border-none focus:border-none"
-            >
-              {customerName}
-            </span>
-          </p>
-          <p className="flex items-center gap-2">
-            <strong>Phone:</strong>
-            <span
-              contentEditable
-              suppressContentEditableWarning={true}
-              onBlur={(e) => setCustomerPhone(e.currentTarget.innerText)}
-              className={`outline-none border-none focus:outline-none ${
-                isGeneratingPDF
-                  ? ""
-                  : "border-b border-dashed border-gray-400 px-2"
-              }`}
-            >
-              {customerPhone}
-            </span>
-
-            {/* Only show search button in screen mode (not in PDF) */}
-            {!isGeneratingPDF && (
-              <button
-                onClick={async () => {
-                  if (!customerPhone || customerPhone.length < 4) {
-                    alert("Please enter valid phone number.");
-                    return;
-                  }
-
-                  try {
-                    const token = localStorage.getItem("token");
-                    const res = await fetch(
-                      `${BASE_URL}/orders/pending?phone=${customerPhone}`,
-                      {
-                        headers: {
-                          Authorization: `Bearer ${token}`,
-                        },
+          {/* QR + Consignee Section */}
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            {/* CONSIGNEE INFO */}
+            <div>
+              <h3 className="font-bold mb-2 text-base">Consignee (Ship To)</h3>
+              <p>
+                <strong>Name:</strong>{" "}
+                <span
+                  contentEditable
+                  suppressContentEditableWarning={true}
+                  onBlur={(e) => setCustomerName(e.target.innerText)}
+                  className="outline-none focus:outline-none border-none focus:border-none"
+                >
+                  {customerName}
+                </span>
+              </p>
+              <p>
+                <strong>Address:</strong>{" "}
+                <span
+                  contentEditable
+                  suppressContentEditableWarning={true}
+                  onBlur={(e) => setCustomerAddress(e.target.innerText)}
+                  className="outline-none focus:outline-none border-none focus:border-none"
+                >
+                  {customerAddress}
+                </span>
+              </p>
+              <p>
+                <strong>GSTIN:</strong>{" "}
+                <span
+                  contentEditable
+                  suppressContentEditableWarning={true}
+                  onBlur={(e) => setCustomerGST(e.target.innerText)}
+                  className="outline-none focus:outline-none border-none focus:border-none"
+                >
+                  {customerGST}
+                </span>
+              </p>
+              <p>
+                <strong>State:</strong>{" "}
+                <span
+                  contentEditable
+                  suppressContentEditableWarning={true}
+                  onBlur={(e) => setCustomerState(e.target.innerText)}
+                  className="outline-none focus:outline-none border-none focus:border-none"
+                >
+                  {customerState}
+                </span>
+              </p>
+              <p className="flex items-center gap-2 mt-1">
+                <strong>Phone:</strong>
+                <span
+                  contentEditable
+                  suppressContentEditableWarning={true}
+                  onBlur={(e) => setCustomerPhone(e.currentTarget.innerText)}
+                  className={`outline-none border-none focus:outline-none ${
+                    isGeneratingPDF
+                      ? ""
+                      : "border-b border-dashed border-gray-400 px-2"
+                  }`}
+                >
+                  {customerPhone}
+                </span>
+                {!isGeneratingPDF && (
+                  <button
+                    onClick={async () => {
+                      if (!customerPhone || customerPhone.length < 4) {
+                        alert("Please enter valid phone number.");
+                        return;
                       }
-                    );
-                    const data = await res.json();
-                    setPreviousPending(data?.pendingAmount || 0);
-                  } catch (err) {
-                    
-                    setPreviousPending(0);
-                  }
-                }}
-                className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600 print:hidden"
-              >
-                🔍
-              </button>
-            )}
-          </p>
+                      try {
+                        const token = localStorage.getItem("token");
+                        const res = await fetch(
+                          `${BASE_URL}/orders/pending?phone=${customerPhone}`,
+                          {
+                            headers: {
+                              Authorization: `Bearer ${token}`,
+                            },
+                          }
+                        );
+                        const data = await res.json();
+                        setPreviousPending(data?.pendingAmount || 0);
+                      } catch (err) {
+                        setPreviousPending(0);
+                      }
+                    }}
+                    className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600 print:hidden"
+                  >
+                    🔍
+                  </button>
+                )}
+              </p>
+            </div>
 
-
-
-
-          <p>
-            <strong>Address:</strong>{" "}
-            <span
-              contentEditable
-              suppressContentEditableWarning={true}
-              onBlur={(e) => setCustomerAddress(e.target.innerText)}
-              className="outline-none focus:outline-none border-none focus:border-none"
-            >
-              {customerAddress}
-            </span>
-          </p>
-          <p>
-            <strong>GSTIN:</strong>{" "}
-            <span
-              contentEditable
-              suppressContentEditableWarning={true}
-              onBlur={(e) => setCustomerGST(e.target.innerText)}
-              className="outline-none focus:outline-none border-none focus:border-none"
-            >
-              {customerGST}
-            </span>
-          </p>
-          <p>
-            <strong>State:</strong>{" "}
-            <span
-              contentEditable
-              suppressContentEditableWarning={true}
-              onBlur={(e) => setCustomerState(e.target.innerText)}
-              className="outline-none focus:outline-none border-none focus:border-none"
-            >
-              {customerState}
-            </span>
-          </p>
-          {/* <p>
-            <strong>Date:</strong> {moment().format("DD MMM, YYYY")}
-          </p> */}
+            {/* QR Code - Right Side Big */}
+            <div className="flex justify-end items-center">
+              <QRCode value={window.location.href} size={140} />
+            </div>
+          </div>
         </div>
+
+
 
         {/* PRODUCT TABLE */}
         <table className="w-full border mt-4 text-sm">
@@ -616,111 +623,137 @@ const InvoiceBuilder: React.FC = () => {
 
         {/* TOTAL SECTION */}
         <div className="mt-4 font-semibold text-sm w-full flex justify-end">
-          <div className="text-right space-y-1">
-            {withGST && (
-              <>
-                <p>Gross: ₹{finalPrice.toFixed(2)}</p>
-                <p>
-                  CGST @{gstRate / 2}%: ₹{(gstAmount / 2).toFixed(2)}
-                </p>
-                <p>
-                  SGST @{gstRate / 2}%: ₹{(gstAmount / 2).toFixed(2)}
-                </p>
-              </>
-            )}
-            <p className="text-lg font-bold">
-              Total: ₹{totalAmount.toFixed(2)}
-            </p>
+  <div className="border border-black p-2 w-full md:w-[350px] text-xs">
+    <div className="grid grid-cols-2 gap-[2px]">
+      {withGST && (
+        <>
+          <div className="border border-gray-400 px-2 py-1">Gross</div>
+          <div className="border border-gray-400 px-2 py-1 text-right">
+            ₹{finalPrice.toFixed(2)}
           </div>
-        </div>
+
+          <div className="border border-gray-400 px-2 py-1">
+            CGST @{gstRate / 2}%
+          </div>
+          <div className="border border-gray-400 px-2 py-1 text-right">
+            ₹{(gstAmount / 2).toFixed(2)}
+          </div>
+
+          <div className="border border-gray-400 px-2 py-1">
+            SGST @{gstRate / 2}%
+          </div>
+          <div className="border border-gray-400 px-2 py-1 text-right">
+            ₹{(gstAmount / 2).toFixed(2)}
+          </div>
+        </>
+      )}
+      <div className="border border-gray-400 px-2 py-1 font-bold">Total</div>
+      <div className="border border-gray-400 px-2 py-1 text-right font-bold">
+        ₹{totalAmount.toFixed(2)}
+      </div>
+    </div>
+  </div>
+</div>
 
         {/* IN WORDS - separate row below total */}
-        <div className="mt-1 italic text-sm font-semibold text-left">
+        <div className="mt-2 border border-black p-2 italic text-sm font-semibold">
           In Words:{" "}
           <strong>{toWords(Math.round(totalAmount)).toUpperCase()} ONLY</strong>
         </div>
 
-        {/* PAYMENT / DUES SECTION - Clean & Professional */}
-        <div className="mt-4 font-semibold text-sm w-full flex flex-col items-end space-y-1">
-          {/* Previous Pending - auto fetched */}
-          <p className="text-right">
-            <strong>Previous Pending:</strong>{" "}
-            <span
-              contentEditable
-              suppressContentEditableWarning={true}
-              onBlur={(e) =>
-                setPreviousPending(Number(e.currentTarget.innerText))
-              }
-              className="outline-none focus:outline-none border-b border-dashed border-gray-400 min-w-[60px] inline-block print:border-none"
-            >
-              {previousPending}
-            </span>
-          </p>
+       
+        
 
-          {/* Adjust from Previous Pending */}
-          <p className="text-right">
-            <strong>Adjust from Previous Pending:</strong>{" "}
-            <span
-              contentEditable
-              suppressContentEditableWarning={true}
-              onBlur={(e) =>
-                setOldPendingAdjusted(Number(e.currentTarget.innerText))
-              }
-              className="outline-none focus:outline-none border-b border-dashed border-gray-400 min-w-[60px] inline-block print:border-none"
-            >
-              {oldPendingAdjusted}
-            </span>
-          </p>
+{/* PAYMENT / DUES SECTION - Now in boxed layout */}
+<div className="mt-4 font-semibold text-sm w-full">
+  <div className="border border-black p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
 
-          {/* Amount Paid */}
-          <p className="text-right">
-            <strong>Amount Paid (₹):</strong>{" "}
-            <span
-              contentEditable
-              suppressContentEditableWarning={true}
-              onBlur={(e) => setAmountPaid(Number(e.currentTarget.innerText))}
-              className="outline-none focus:outline-none border-b border-dashed border-gray-400 min-w-[60px] inline-block print:border-none"
-            >
-              {amountPaid}
-            </span>
-          </p>
+    {/* Bank Details */}
+    <div className="text-sm">
+      <p>
+        <strong>Bank Name:</strong> BANDHAN BANK
+      </p>
+      <p>
+        <strong>Account No:</strong> 10190007098780
+      </p>
+      <p>
+        <strong>IFSC:</strong> BDBL0001825
+      </p>
+    </div>
 
-          {/* Carry Forward (auto-calculated) */}
-          <p className="text-right text-red-600 text-base mt-1">
-            <strong>Carry Forward:</strong> ₹
-            {(
-              totalAmount +
-              previousPending -
-              (amountPaid + oldPendingAdjusted)
-            ).toFixed(2)}
-          </p>
+    {/* Dues Section */}
+    <div className="text-xs">
+      <div className="grid grid-cols-2 gap-[2px]">
+        <div className="border border-gray-400 px-2 py-1">Previous Pending</div>
+        <div className="border border-gray-400 px-2 py-1 text-right">
+          <span
+            contentEditable
+            suppressContentEditableWarning={true}
+            onBlur={(e) => setPreviousPending(Number(e.currentTarget.innerText))}
+            className="outline-none focus:outline-none w-full inline-block print:border-none"
+          >
+            {previousPending}
+          </span>
         </div>
 
-        {/* FOOTER */}
-        <div className="mt-6 text-sm border-t pt-3">
-          <p>
-            <strong>Bank Name:</strong> BANDHAN BANK
-          </p>
-          <p>
-            <strong>Account No:</strong> 10190007098780
-          </p>
-          <p>
-            <strong>IFSC:</strong> BDBL0001825
-          </p>
+        <div className="border border-gray-400 px-2 py-1">Adjust from Previous Pending</div>
+        <div className="border border-gray-400 px-2 py-1 text-right">
+          <span
+            contentEditable
+            suppressContentEditableWarning={true}
+            onBlur={(e) => setOldPendingAdjusted(Number(e.currentTarget.innerText))}
+            className="outline-none focus:outline-none w-full inline-block print:border-none"
+          >
+            {oldPendingAdjusted}
+          </span>
         </div>
 
-        <div className="text-sm mt-4 flex justify-between border-t pt-3">
-          <div>
-            <p className="font-bold">Terms & Conditions:</p>
-            <p>1. Goods once sold will not be taken back.</p>
-            <p>2. All disputes are subject to Rohtak Jurisdiction.</p>
-            <p>3. E & O.E.</p>
-          </div>
-          <div className="text-right font-semibold">
-            <p>for: DEV JYOTI TEXTILE</p>
-            <p className="mt-6">Auth. Signatory</p>
-          </div>
+        <div className="border border-gray-400 px-2 py-1">Amount Paid (₹)</div>
+        <div className="border border-gray-400 px-2 py-1 text-right">
+          <span
+            contentEditable
+            suppressContentEditableWarning={true}
+            onBlur={(e) => setAmountPaid(Number(e.currentTarget.innerText))}
+            className="outline-none focus:outline-none w-full inline-block print:border-none"
+          >
+            {amountPaid}
+          </span>
         </div>
+
+        <div className="border border-gray-400 px-2 py-1 font-semibold text-red-600">Carry Forward</div>
+        <div className="border border-gray-400 px-2 py-1 text-right font-semibold text-red-600">
+          ₹{(
+            totalAmount +
+            previousPending -
+            (amountPaid + oldPendingAdjusted)
+          ).toFixed(2)}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+{/* TERMS & CONDITIONS + SIGNATURE */}
+<div className="mt-4 border border-black p-4 text-sm">
+  <div className="flex justify-between">
+    <div>
+      <p className="font-bold">Terms & Conditions:</p>
+      <p>1. Goods once sold will not be taken back.</p>
+      <p>2. All disputes are subject to Rohtak Jurisdiction.</p>
+      <p>3. E & O.E.</p>
+    </div>
+    <div className="text-right font-semibold">
+      <p>for: DEV JYOTI TEXTILE</p>
+      <p className="mt-6">Auth. Signatory</p>
+    </div>
+  </div>
+  <p className="text-center mt-4 italic text-gray-600">
+    This is a Computer Generated Invoice. Signature Not Required.
+  </p>
+</div>
+
 
         {/* Print Button */}
         <div className="mt-4 print:hidden">
