@@ -108,9 +108,9 @@ const OnSubmitHandler = async (e: User, { resetForm }: any) => {
 
                   </Button>
                 </div>
-                <div className="mb-3 py-1 flex items-center justify-end">
+                {/* <div className="mb-3 py-1 flex items-center justify-end">
                   <p className="inline-flex items-center gap-x-1">   Don't Have An Account?<Link className='font-semibold' to={'/register'}>Register</Link></p>
-                </div>
+                </div> */}
                 <div className="mb-3 py-1 flex items-center justify-end">
                   <p className="inline-flex items-center gap-x-1">   Forget<Link className='font-semibold' to={'#'}>Password ?</Link></p>
                 </div>
