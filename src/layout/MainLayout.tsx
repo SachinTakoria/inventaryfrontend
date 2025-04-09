@@ -46,11 +46,11 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
 
             {isSubadmin ? (
               <>
-                <MenuItem component={<Link to="/invoice-builder-2" />} icon={<FaFileInvoice className="text-2xl" />}>
+               <MenuItem component={<Link to="/invoice-builder" />} icon={<FaFileInvoice className="text-2xl" />}>
                   DJInvoice
                 </MenuItem>
-                <MenuItem component={<Link to="/shreesai-bills" />} icon={<FaFileInvoice className="text-2xl" />}>
-                  SSInvoice
+                <MenuItem component={<Link to="/invoice-builder-2" />} icon={<FaFileInvoice className="text-2xl" />}>
+                  HTINVOICE
                 </MenuItem>
               </>
             ) : (
