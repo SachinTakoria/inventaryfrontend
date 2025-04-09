@@ -17,6 +17,8 @@ import Inventory from "../pages/Home/Inventary";
 import InvoiceBuilder2 from "../pages/Home/InvoiceBuilder2";
 import MyBills2 from "../pages/Home/MyBills2";
 import InvoiceViewer2 from "../pages/Home/InvoiceViewer2";
+import SubadminDashboard from "../Subadmin/SubadminDashboard"; // 👈 add this line
+
 
 export const Routes = createBrowserRouter([
   {
@@ -75,6 +77,10 @@ export const Routes = createBrowserRouter([
       {
         path: '/shreesai-bills',
         Component: MyBills2
+      },
+      {
+        path: "/subadmin/dashboard", // ✅ NEW: Subadmin Route
+        Component: SubadminDashboard,
       },
       {
         path: "*",

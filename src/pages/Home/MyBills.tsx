@@ -29,6 +29,9 @@ const MyBills = () => {
         const data = await res.json();
 
         if (data.orders?.length > 0) {
+          // console.log("📦 All Orders:", data.orders.map((o: any) => o.createdAt));
+
+
           setOrders(data.orders);
           // console.log("📦 Orders Data", data.orders);
 
@@ -56,26 +59,34 @@ const MyBills = () => {
     );
   });
 
-  const groupFilteredOrders = () => {
-    const today = moment().format("YYYY-MM-DD");
-    const yesterday = moment().subtract(1, "day").format("YYYY-MM-DD");
 
+  const groupFilteredOrders = () => {
+    const today = moment().startOf("day");
+    const yesterday = moment().subtract(1, "day").startOf("day");
+  
     const todayOrders = filteredOrders.filter((o) =>
-      moment(o.createdAt).isSame(today, "day")
+      moment.utc(o.createdAt).local().isSame(today, "day")
     );
+  
     const yesterdayOrders = filteredOrders.filter((o) =>
-      moment(o.createdAt).isSame(yesterday, "day")
+      moment.utc(o.createdAt).local().isSame(yesterday, "day")
     );
+  
     const olderOrders = filteredOrders.filter(
       (o) =>
         !moment(o.createdAt).isSame(today, "day") &&
         !moment(o.createdAt).isSame(yesterday, "day")
     );
-
+    
+  
     return { todayOrders, yesterdayOrders, olderOrders };
   };
-
+  
+  
+  
   const { todayOrders, yesterdayOrders, olderOrders } = groupFilteredOrders();
+
+  
 
   const openModal = (id: string) => {
     setSelectedInvoiceId(id);

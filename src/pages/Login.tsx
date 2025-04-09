@@ -35,32 +35,44 @@ const dispatch = useDispatch();
     password: yup.string().min(5,"Password must be grather than 5 characters").required("password is required"),
   })
 
-  const OnSubmitHandler = async (e: User, { resetForm }: any) => {
-    try {
-      const { data, error }: any = await LoginUser(e);
-  
-      if (error) {
-        toast.error(error.data?.message || "Login failed");
-        return;
-      }
-  
-      // ✅ Save token
-      localStorage.setItem("token", data.token);
-  
-      // ✅ Save user to Redux
-      dispatch(setUser(data.user)); // 👈 make sure user is coming in response
-  
-      toast.success("Login successful!");
-  
-      // ✅ Reset form & redirect
-      resetForm();
-      navigate("/");
-    } catch (error: any) {
-      toast.error(error.message || "Something went wrong during login.");
-    } finally {
-      RecaptchaRef.current?.reset();
+// ✅ Inside OnSubmitHandler in Login.tsx
+const OnSubmitHandler = async (e: User, { resetForm }: any) => {
+  try {
+    const { data, error }: any = await LoginUser(e);
+
+    if (error) {
+      toast.error(error.data?.message || "Login failed");
+      return;
     }
-  };
+
+    // ✅ Save token
+    localStorage.setItem("token", data.token);
+
+    // ✅ Save user to Redux
+    dispatch(setUser(data.user));
+    localStorage.setItem("user", JSON.stringify(data.user));
+
+    toast.success("Login successful!");
+
+    // ✅ Reset form
+    resetForm();
+
+    // ✅ 🚀 Role-based Redirect
+    if (data.user.role === "admin") {
+      navigate("/");
+    } else if (data.user.role === "subadmin") {
+      navigate("/subadmin/dashboard");
+    } else {
+      toast.error("Invalid role");
+    }
+
+  } catch (error: any) {
+    toast.error(error.message || "Something went wrong during login.");
+  } finally {
+    RecaptchaRef.current?.reset();
+  }
+};
+
 
   return (
 

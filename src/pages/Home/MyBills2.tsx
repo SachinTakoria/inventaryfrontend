@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import moment from "moment";
-import { Link } from "react-router-dom";
+
+import InvoiceViewer2 from "./InvoiceViewer2";
 
 const MyBills2 = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
 
   const page = 1;
   const firm = "shreesai";
@@ -54,32 +58,54 @@ const MyBills2 = () => {
     );
   });
 
-  const groupFilteredOrders = () => {
-    const today = moment().format("YYYY-MM-DD");
-    const yesterday = moment().subtract(1, "day").format("YYYY-MM-DD");
-
-    const todayOrders = filteredOrders.filter((o) =>
-      moment(o.createdAt).isSame(today, "day")
-    );
-    const yesterdayOrders = filteredOrders.filter((o) =>
-      moment(o.createdAt).isSame(yesterday, "day")
-    );
-    const olderOrders = filteredOrders.filter(
-      (o) =>
-        !moment(o.createdAt).isSame(today, "day") &&
-        !moment(o.createdAt).isSame(yesterday, "day")
-    );
-
-    return { todayOrders, yesterdayOrders, olderOrders };
-  };
+ const groupFilteredOrders = () => {
+     const today = moment().startOf("day");
+     const yesterday = moment().subtract(1, "day").startOf("day");
+   
+     const todayOrders = filteredOrders.filter((o) =>
+       moment.utc(o.createdAt).local().isSame(today, "day")
+     );
+   
+     const yesterdayOrders = filteredOrders.filter((o) =>
+       moment.utc(o.createdAt).local().isSame(yesterday, "day")
+     );
+   
+     const olderOrders = filteredOrders.filter(
+       (o) =>
+         !moment(o.createdAt).isSame(today, "day") &&
+         !moment(o.createdAt).isSame(yesterday, "day")
+     );
+     
+   
+     return { todayOrders, yesterdayOrders, olderOrders };
+   };
 
   const { todayOrders, yesterdayOrders, olderOrders } = groupFilteredOrders();
 
+  
+  const openModal = (id: string) => {
+    setSelectedInvoiceId(id);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedInvoiceId(null);
+  };
+
+  const handleDownload = () => {
+    const printContents = document.getElementById("printable-invoice")?.innerHTML;
+    const printWindow = window.open("", "_blank");
+    if (printWindow && printContents) {
+      printWindow.document.write(`<html><head><title>Invoice</title></head><body>${printContents}</body></html>`);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <h2 className="text-3xl font-bold text-gray-800 mb-6">
-        🧾 My Bills - Shree Sai Suit
-      </h2>
+      <h2 className="text-3xl font-bold text-gray-800 mb-6">🧾 My Bills</h2>
 
       <div className="flex justify-end mb-6">
         <input
@@ -91,11 +117,7 @@ const MyBills2 = () => {
         />
       </div>
 
-      {[
-        { label: "Today", bills: todayOrders },
-        { label: "Yesterday", bills: yesterdayOrders },
-        { label: "Older", bills: olderOrders },
-      ].map(({ label, bills }) => (
+      {[{ label: "Today", bills: todayOrders }, { label: "Yesterday", bills: yesterdayOrders }, { label: "Older", bills: olderOrders }].map(({ label, bills }) => (
         <div key={label} className="mb-10">
           <h3 className="text-2xl font-semibold mb-4 text-gray-700">{label}</h3>
 
@@ -116,33 +138,19 @@ const MyBills2 = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white">
                   {bills.map((bill) => (
-                    <tr
-                      key={bill._id}
-                      className="hover:bg-gray-50 transition-colors duration-150"
-                    >
-                      <td className="px-6 py-4 font-medium text-gray-800">
-                        {bill.invoiceNumber || "N/A"}
-                      </td>
-                      <td className="px-6 py-4 text-gray-700">
-                        {bill.customerName || "N/A"}
-                      </td>
-                      <td className="px-6 py-4 text-gray-700">
-                        {bill.customerPhone || "N/A"}
-                      </td>
+                    <tr key={bill._id} className="hover:bg-gray-50 transition-colors duration-150">
+                      <td className="px-6 py-4 font-medium text-gray-800">{bill.invoiceNumber || "N/A"}</td>
+                      <td className="px-6 py-4 text-gray-700">{bill.customerName || "N/A"}</td>
+                      <td className="px-6 py-4 text-gray-700">{bill.customerPhone || "N/A"}</td>
+                      <td className="px-6 py-4 text-center">{bill.items?.length || 0}</td>
+                      <td className="px-6 py-4 text-gray-700">{moment(bill.createdAt).format("DD MMM YYYY, hh:mm A")}</td>
                       <td className="px-6 py-4 text-center">
-                        {bill.items?.length || 0}
-                      </td>
-                      <td className="px-6 py-4 text-gray-700">
-                        {moment(bill.createdAt).format("DD MMM YYYY, hh:mm A")}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <Link
-                          to={`/invoice-view/${bill._id}`}
-                          target="_blank"
+                        <button
+                          onClick={() => openModal(bill._id)}
                           className="text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center gap-1"
                         >
                           🔍 <span>View</span>
-                        </Link>
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -152,6 +160,30 @@ const MyBills2 = () => {
           )}
         </div>
       ))}
+
+      {showModal && selectedInvoiceId && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-xl w-[90%] h-[90%] relative overflow-y-auto">
+            <button
+              onClick={closeModal}
+              className="absolute top-4 right-4 text-gray-700 hover:text-red-600 text-xl font-bold"
+            >
+              ✕
+            </button>
+            <button
+              onClick={handleDownload}
+              className="absolute top-4 right-16 text-blue-700 hover:text-blue-900 text-lg"
+              title="Download/Print Invoice"
+            >
+              🖨️
+            </button>
+
+            <div className="p-6 overflow-y-auto h-full">
+              <InvoiceViewer2 invoiceId={selectedInvoiceId} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

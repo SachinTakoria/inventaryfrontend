@@ -60,7 +60,7 @@ const HomePage = () => {
         <Card title="Today's Sale" value={`₹${stats.todaySale}`} />
         <Card title="Yesterday's Sale" value={`₹${stats.yesterdaySale}`} />
         {/* <Card title="Total Users" value={stats.totalUsers} /> */}
-        <Card title="Total Orders" value={stats.totalOrders} />
+        <Card title="Total Bills" value={stats.totalOrders} />
       </div>
 
       {/* 🆕 Date-wise Sale Filter */}
