@@ -20,14 +20,13 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // console.log("🔍 Inside useEffect | Redux User:", user);
-    // Wait until user role is available
+    
     if (user && user.role) {
       setReady(true);
     }
   }, [user]);
 
-  // console.log("🔥 Outside | Redux User:", user);
+  
 
   if (!ready) {
     return <div className="p-5 text-lg font-medium">Loading Sidebar...</div>;

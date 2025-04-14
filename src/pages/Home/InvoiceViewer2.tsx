@@ -42,7 +42,7 @@ const InvoiceViewer2 = ({ invoiceId }: Props) => {
   const sgst = gstAmount / 2;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto bg-white border shadow print:bg-white">
+    <div id="printable-invoice" className="p-6 max-w-5xl mx-auto bg-white border shadow print:bg-white">
       <h2 className="text-center text-md font-bold border-b border-black pb-2 mb-4">
         TAX INVOICE
       </h2>

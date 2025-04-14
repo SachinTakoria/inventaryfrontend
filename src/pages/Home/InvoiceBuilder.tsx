@@ -40,9 +40,22 @@ const InvoiceBuilder: React.FC = () => {
     createdAt?: string;
   } | null>(null);
 
+   const [consignees, setConsignees] = useState<any[]>([]);
+    const [selectedConsignee, setSelectedConsignee] = useState<any>(null);
+    const [addingNew, setAddingNew] = useState(false);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [newConsignee, setNewConsignee] = useState({
+      name: "",
+      address: "",
+      gstin: "",
+      pan: "",
+      state: "",
+    });
+
+
   const user = useSelector((state: any) => state.user?.currentUser);
 
-  // console.log("🧠 User from Redux:", user);
+
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -80,6 +93,21 @@ const InvoiceBuilder: React.FC = () => {
 
     fetchPreviousPending();
   }, [customerPhone]);
+
+
+
+  useEffect(() => {
+    const fetchConsignees = async () => {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${BASE_URL}/consignees`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      setConsignees(data.consignees || []);
+    };
+    fetchConsignees();
+  }, []);
+
 
   const handleProductNameChange = (index: number, value: string) => {
     const updatedItems = [...editableItems];
@@ -249,6 +277,7 @@ const InvoiceBuilder: React.FC = () => {
             customerGST,
             customerPhone,
             customerState,
+            firm: "devjyoti", 
             items: editableItems.map((item) => ({
               name: item.name,
               price: item.price,
@@ -272,6 +301,8 @@ const InvoiceBuilder: React.FC = () => {
             createdAt: invoiceData.invoice.createdAt,
           });
 
+          
+
 
           await fetch(`${BASE_URL}/orders/update-invoice-number/${data.order._id}`, {
             method: "PATCH",
@@ -287,7 +318,7 @@ const InvoiceBuilder: React.FC = () => {
         }
 
         setIsGeneratingPDF(true);
-        // console.log("User from Redux:", user);
+        
 
         if (!user || !user._id) {
           alert("❌ User not found. Please login again.");
@@ -314,7 +345,7 @@ const InvoiceBuilder: React.FC = () => {
           setCustomerAddress("");
           setCustomerGST("");
           setCustomerState("");
-        }, 500);
+        }, 1000);
       } else {
         alert("❌ Failed to create invoice. Try again.");
       }
@@ -323,26 +354,73 @@ const InvoiceBuilder: React.FC = () => {
     }
   };
 
+  const handleDeleteConsignee = async (id: string) => {
+    const token = localStorage.getItem("token");
+    const confirm = window.confirm("Are you sure you want to delete?");
+    if (!confirm) return;
+
+    const res = await fetch(`${BASE_URL}/consignees/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      setConsignees((prev) => prev.filter((c) => c._id !== id));
+      setSelectedConsignee(null);
+      alert("✅ Consignee deleted");
+    } else {
+      alert("❌ Failed to delete");
+    }
+  };
+
+  const handleSaveConsignee = async () => {
+    const token = localStorage.getItem("token");
+    const method = editingId ? "PUT" : "POST";
+    const url = editingId
+      ? `${BASE_URL}/consignees/${editingId}`
+      : `${BASE_URL}/consignees`;
+
+    const res = await fetch(url, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(newConsignee),
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      alert(`✅ Consignee ${editingId ? "updated" : "added"} successfully`);
+      if (!editingId) {
+        setConsignees((prev) => [...prev, data.consignee]);
+      } else {
+        setConsignees((prev) =>
+          prev.map((c) => (c._id === editingId ? data.consignee : c))
+        );
+      }
+      setNewConsignee({ name: "", address: "", gstin: "", pan: "", state: "" });
+      setAddingNew(false);
+      setEditingId(null);
+    } else {
+      alert("❌ Failed to save consignee");
+    }
+  };
+
   return (
     <div className="p-4">
-      <div className="print:hidden flex flex-wrap gap-4 mb-4">
-        <button
-          onClick={() => setWithGST(false)}
-          className={`px-4 py-2 rounded ${
-            !withGST ? "bg-blue-500 text-white" : "bg-gray-300"
-          }`}
-        >
-          Without GST
-        </button>
-        <button
-          onClick={() => setWithGST(true)}
-          className={`px-4 py-2 rounded ${
-            withGST ? "bg-blue-500 text-white" : "bg-gray-300"
-          }`}
-        >
-          With GST
-        </button>
-        {withGST && (
+      <div>
+        {/* CONTROLS */}
+        <div className="print:hidden flex flex-wrap gap-4 mb-4">
+        <label className="flex items-center gap-2 text-sm">
+    <input
+      type="checkbox"
+      checked={withGST}
+      onChange={(e) => setWithGST(e.target.checked)}
+    />
+    With GST
+  </label>
           <select
             className="border px-2 py-1 text-sm"
             value={gstRate}
@@ -354,176 +432,239 @@ const InvoiceBuilder: React.FC = () => {
             <option value="18">18%</option>
             <option value="28">28%</option>
           </select>
-        )}
-        <select
-          value={bgColor}
-          onChange={(e) => setBgColor(e.target.value)}
-          className="border px-2 py-1 text-sm"
+
+          <select
+            value={bgColor}
+            onChange={(e) => setBgColor(e.target.value)}
+            className="border px-2 py-1 text-sm"
+          >
+            <option value="pink">Pink</option>
+            <option value="yellow">Yellow</option>
+            <option value="white">White</option>
+          </select>
+        </div>
+
+        {/* INVOICE BODY */}
+        <div
+          ref={targetRef}
+          className="p-6 border border-gray-300 print:bg-white"
+          style={{ backgroundColor: getBackgroundColor() }}
         >
-          <option value="pink">Pink</option>
-          <option value="yellow">Yellow</option>
-          <option value="white">White</option>
-        </select>
-      </div>
+     <h2 className="text-md font-bold text-center mb-6 border-b border-black pb-2">
+  {withGST ? "TAX INVOICE" : "INVOICE"}
+</h2>
 
-      {/* INVOICE BODY */}
-      <div
-        ref={targetRef}
-        className="p-6 border border-black print:bg-white"
-        style={{
-          backgroundColor: getBackgroundColor(),
-          border: "2px solid black",
-          padding: "20px",
-        }}
-      >
-        <h1 className="text-xl font-bold text-center underline">
-          {withGST ? "TAX INVOICE" : "INVOICE"}
-        </h1>
+{/* ESTIMATED BILL - shown only if withGST is false */}
+{!withGST && (
+  <div className="flex justify-between items-start mb-4">
+    <div className="w-full text-center">
+      <h1 className="text-2xl font-bold">ESTIMATED BILL</h1>
+    </div>
+    <div className="text-right text-[11px] font-medium leading-snug min-w-[200px]">
+      <p className="mt-2">
+        <strong>Invoice No:</strong> <span>{orderData?.invoiceNumber || "N/A"}</span>
+      </p>
+      <p>
+        <strong>Dated:</strong> <span>{moment(orderData?.createdAt).format("DD MMM, YYYY")}</span>
+      </p>
+    </div>
+  </div>
+)}
 
-        <div className="border border-black p-4 mb-4">
-          <div className="flex justify-between items-start">
-            <div className="w-1/4 flex justify-start items-start">
-              {withGST && orderData?.invoiceNumber && (
-                <QRCode
-                  value={`https://satyaka.in/invoice-view/${orderData.invoiceNumber}`}
-                  size={80}
-                  className="bg-white p-1"
-                />
-              )}
+
+
+
+
+          {/* HEADER */}
+          <div className="flex justify-between items-start gap-4 border-b pb-4">
+  {/* LEFT SIDE: Firm + Consignee - Only visible when withGST is true */}
+  {withGST && (
+    <div className="w-[60%]">
+      <h1 className="text-2xl font-bold">DEV JYOTI TEXTILES</h1>
+      <p className="text-sm mt-1">SHORI CLOTH MARKET ,ROHTAK-124001</p>
+      <p className="text-sm font-semibold text-red-600 mt-1">GSTIN/UIN: 06BSSPJ8369N1ZN | M: 9812183950</p>
+      <p className="text-sm font-semibold text-black mt-1">State Name: HARYANA 124001</p>
+
+      {/* ✅ NEW BLOCK: Consignee (Ship To) Static Details */}
+      <div className="mt-4">
+        <div className="flex justify-between items-center print:hidden">
+          <h3 className="font-semibold">CONSIGNEE (SHIP TO)</h3>
+          {!isGeneratingPDF && (
+            <div className="flex items-center gap-2 mb-2 justify-end">
+              <select className="border px-2 py-1 text-sm" onChange={(e) => {
+                const selected = consignees.find((c) => c._id === e.target.value);
+                setSelectedConsignee(selected);
+              }}>
+                <option value="">Select Consignee</option>
+                {consignees.map((c) => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
+                ))}
+              </select>
+              <button className="text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600" onClick={() => {
+                setAddingNew(true);
+                setEditingId(null);
+                setNewConsignee({ name: "", address: "", gstin: "", pan: "", state: "" });
+              }}>➕</button>
             </div>
-
-            {/* Firm Info - Center */}
-            <div className="w-2/4 text-center space-y-1">
-              {withGST ? (
-                <>
-                  <h1 className="text-2xl font-bold tracking-wide">
-                    DEV JYOTI TEXTILE
-                  </h1>
-                  <p className="text-sm">Shori Cloth Market, Rohtak - 124001</p>
-                  <p className="text-sm">
-                    <span className="font-semibold text-red-600">GSTIN:</span>{" "}
-                    <span className="text-red-600">06BSSPJ8369N1ZN</span>{" "}
-                    &nbsp;|&nbsp;
-                    <span className="font-semibold text-red-600">M:</span>{" "}
-                    <span className="text-red-600">9812183950</span>
-                  </p>
-                </>
-              ) : (
-                <h1 className="text-xl font-bold tracking-wide">
-                  ESTIMATED BILL
-                </h1>
-              )}
-            </div>
-
-            {/* Invoice Info - Right */}
-            <div className="w-1/4 text-xs text-right  p-2">
-              <p>
-                <strong>Invoice No:</strong> {orderData?.invoiceNumber || "--"}
-              </p>
-              <p>
-                <strong>Dated:</strong>{" "}
-                {moment(orderData?.createdAt).format("DD MMM, YYYY")}
-              </p>
+          )}
+        </div>
+        {selectedConsignee && !addingNew && (
+          <div className="text-sm mt-1">
+            <p className="font-bold">{selectedConsignee.name}</p>
+            <p>{selectedConsignee.address}</p>
+            <p>GSTIN/UIN: {selectedConsignee.gstin}</p>
+            <p>PAN/IT No: {selectedConsignee.pan}</p>
+            <p>State Name: {selectedConsignee.state}</p>
+            {!isGeneratingPDF && (
+              <div className="print:hidden mt-2 flex gap-2">
+                <button className="text-blue-600 text-sm" onClick={() => {
+                  setEditingId(selectedConsignee._id);
+                  setNewConsignee({ ...selectedConsignee });
+                  setAddingNew(true);
+                }}>✏️</button>
+                <button className="text-red-600 text-sm" onClick={() => handleDeleteConsignee(selectedConsignee._id)}>❌</button>
+              </div>
+            )}
+          </div>
+        )}
+        {addingNew && (
+          <div className="mt-4 space-y-2 print:hidden">
+            {["name", "address", "gstin", "pan", "state"].map((field) => (
+              <input
+                key={field}
+                className="w-full border px-3 py-1 text-sm rounded"
+                placeholder={`Enter ${field}`}
+                value={newConsignee[field]}
+                onChange={(e) => setNewConsignee({ ...newConsignee, [field]: e.target.value })}
+              />
+            ))}
+            <div className="flex gap-2">
+              <button className="bg-blue-500 text-white px-4 py-1 rounded" onClick={handleSaveConsignee}>✅ Save</button>
+              <button className="bg-gray-400 text-white px-4 py-1 rounded" onClick={() => {
+                setAddingNew(false);
+                setEditingId(null);
+                setNewConsignee({ name: "", address: "", gstin: "", pan: "", state: "" });
+              }}>❌ Cancel</button>
             </div>
           </div>
+        )}
+      </div>
+    </div>
+  )}
 
-          <div className="mt-4 text-sm">
-            <h3 className="font-bold mb-2 text-base">Consignee (Ship To)</h3>
-            <table className="table-auto w-full text-sm border border-gray-400">
-              <thead>
-                <tr>
-                  <th className="border px-2 py-1 font-semibold">Name</th>
-                  <th className="border px-2 py-1 font-semibold">Address</th>
-                  <th className="border px-2 py-1 font-semibold">GSTIN</th>
-                  <th className="border px-2 py-1 font-semibold">State</th>
-                  <th className="border px-2 py-1 font-semibold">Phone</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td className="border px-2 py-1">
-                    <span
-                      contentEditable
-                      suppressContentEditableWarning={true}
-                      onBlur={(e) => setCustomerName(e.target.innerText)}
-                      className="outline-none border-none focus:outline-none w-full inline-block"
-                    >
-                      {customerName}
-                    </span>
-                  </td>
-                  <td className="border px-2 py-1">
-                    <span
-                      contentEditable
-                      suppressContentEditableWarning={true}
-                      onBlur={(e) => setCustomerAddress(e.target.innerText)}
-                      className="outline-none border-none focus:outline-none w-full inline-block"
-                    >
-                      {customerAddress}
-                    </span>
-                  </td>
-                  <td className="border px-2 py-1">
-                    <span
-                      contentEditable
-                      suppressContentEditableWarning={true}
-                      onBlur={(e) => setCustomerGST(e.target.innerText)}
-                      className="outline-none border-none focus:outline-none w-full inline-block"
-                    >
-                      {customerGST}
-                    </span>
-                  </td>
-                  <td className="border px-2 py-1">
-                    <span
-                      contentEditable
-                      suppressContentEditableWarning={true}
-                      onBlur={(e) => setCustomerState(e.target.innerText)}
-                      className="outline-none border-none focus:outline-none w-full inline-block"
-                    >
-                      {customerState}
-                    </span>
-                  </td>
-                  <td className="border px-2 py-1 flex items-center gap-2">
-                    <span
-                      contentEditable
-                      suppressContentEditableWarning={true}
-                      onBlur={(e) =>
-                        setCustomerPhone(e.currentTarget.innerText)
-                      }
-                      className="outline-none border-none focus:outline-none w-full inline-block"
-                    >
-                      {customerPhone}
-                    </span>
-                    {!isGeneratingPDF && (
-                      <button
-                        onClick={async () => {
-                          if (!customerPhone || customerPhone.length < 4) {
-                            alert("Please enter valid phone number.");
-                            return;
-                          }
-                          try {
-                            const token = localStorage.getItem("token");
-                            const res = await fetch(
-                              `${BASE_URL}/orders/pending?phone=${customerPhone}`,
-                              {
-                                headers: {
-                                  Authorization: `Bearer ${token}`,
-                                },
-                              }
-                            );
-                            const data = await res.json();
-                            setPreviousPending(data?.pendingAmount || 0);
-                          } catch (err) {
-                            setPreviousPending(0);
-                          }
-                        }}
-                        className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600 print:hidden"
-                      >
-                        🔍
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+  {/* ✅ RIGHT SIDE: Invoice Info always visible, QR Code only if withGST */}
+  <div className="w-[40%] flex flex-col items-end text-right text-[11px] font-medium leading-snug">
+  {withGST ? (
+    <>
+      <QRCode value={window.location.href} size={140} />
+      <p className="mt-2">
+        <strong>Invoice No:</strong> <span>{orderData?.invoiceNumber || "N/A"}</span>
+      </p>
+      <p>
+        <strong>Dated:</strong> <span>{moment(orderData?.createdAt).format("DD MMM, YYYY")}</span>
+      </p>
+    </>
+  ) : null}
+</div>
+
+</div>
+
+
+          {/* CUSTOMER INFO SECTION */}
+          <div className="mt-4 text-sm border-b pb-3">
+            <h3 className="font-semibold mb-1">Buyer (Bill To)</h3>
+            <p>
+              <strong>Name:</strong>{" "}
+              <span
+                contentEditable
+                suppressContentEditableWarning={true}
+                onBlur={(e) => setCustomerName(e.target.innerText)}
+                className="outline-none focus:outline-none border-none focus:border-none"
+              >
+                {customerName}
+              </span>
+            </p>
+
+            <p className="flex items-center gap-2">
+              <strong>Phone:</strong>{" "}
+              <span
+                contentEditable
+                suppressContentEditableWarning={true}
+                onBlur={(e) => setCustomerPhone(e.currentTarget.innerText)}
+                className={`outline-none border-none focus:outline-none ${
+                  isGeneratingPDF
+                    ? ""
+                    : "border-b border-dashed border-gray-400 px-2"
+                }`}
+              >
+                {customerPhone}
+              </span>
+              {!isGeneratingPDF && (
+                <button
+                  onClick={async () => {
+                    if (!customerPhone || customerPhone.length < 4) {
+                      alert("Please enter valid phone number.");
+                      return;
+                    }
+
+                    try {
+                      const token = localStorage.getItem("token");
+                      const res = await fetch(
+                        `${BASE_URL}/orders/pending?phone=${customerPhone}`,
+                        {
+                          headers: {
+                            Authorization: `Bearer ${token}`,
+                          },
+                        }
+                      );
+                      const data = await res.json();
+                      setPreviousPending(data?.pendingAmount || 0);
+                    } catch (err) {
+                      setPreviousPending(0);
+                    }
+                  }}
+                  className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600 print:hidden"
+                >
+                  🔍
+                </button>
+              )}
+            </p>
+
+            <p>
+              <strong>Address:</strong>{" "}
+              <span
+                contentEditable
+                suppressContentEditableWarning={true}
+                onBlur={(e) => setCustomerAddress(e.target.innerText)}
+                className="outline-none focus:outline-none border-none focus:border-none"
+              >
+                {customerAddress}
+              </span>
+            </p>
+
+            <p>
+              <strong>GSTIN:</strong>{" "}
+              <span
+                contentEditable
+                suppressContentEditableWarning={true}
+                onBlur={(e) => setCustomerGST(e.target.innerText)}
+                className="outline-none focus:outline-none border-none focus:border-none"
+              >
+                {customerGST}
+              </span>
+            </p>
+
+            <p>
+              <strong>State:</strong>{" "}
+              <span
+                contentEditable
+                suppressContentEditableWarning={true}
+                onBlur={(e) => setCustomerState(e.target.innerText)}
+                className="outline-none focus:outline-none border-none focus:border-none"
+              >
+                {customerState}
+              </span>
+            </p>
           </div>
 
           {/* PRODUCT TABLE */}
@@ -697,7 +838,7 @@ const InvoiceBuilder: React.FC = () => {
             </strong>
           </div>
 
-          {/* PAYMENT / DUES SECTION - Now in boxed layout */}
+          {/* PAYMENT / DUES SECTION - Clean & Professional */}
           <div className="mt-4 font-semibold text-sm w-full">
             <div className="border border-black p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Bank Details */}
@@ -706,7 +847,7 @@ const InvoiceBuilder: React.FC = () => {
                   <strong>Bank Name:</strong> BANDHAN BANK
                 </p>
                 <p>
-                  <strong>Account No:</strong> 10190007098780
+                  <strong>Account No:</strong> 10190007096780
                 </p>
                 <p>
                   <strong>IFSC:</strong> BDBL0001825
@@ -780,7 +921,6 @@ const InvoiceBuilder: React.FC = () => {
             </div>
           </div>
 
-          {/* TERMS & CONDITIONS + SIGNATURE */}
           <div className="mt-4 border border-black p-4 text-sm">
             <div className="flex justify-between">
               <div>
@@ -790,7 +930,7 @@ const InvoiceBuilder: React.FC = () => {
                 <p>3. E & O.E.</p>
               </div>
               <div className="text-right font-semibold">
-                <p>for: DEV JYOTI TEXTILE</p>
+                <p>for: DEV JYOTI TEXTILES</p>
                 <p className="mt-6">Auth. Signatory</p>
               </div>
             </div>

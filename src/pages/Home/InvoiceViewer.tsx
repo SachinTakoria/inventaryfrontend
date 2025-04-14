@@ -26,7 +26,7 @@ const InvoiceViewer = ({ invoiceId }: Props) => {
           setInvoice(data.order);
         }
       } catch (error) {
-      
+        
       } finally {
         setLoading(false);
       }
@@ -37,32 +37,55 @@ const InvoiceViewer = ({ invoiceId }: Props) => {
   if (loading) return <div className="p-4 text-center">Loading invoice...</div>;
   if (!invoice) return <div className="p-4 text-center">Invoice not found</div>;
 
+  const isGST = invoice?.withGST === true;
+  const gstRate = invoice?.gstRate || 0;
+  const gstAmount = (invoice.totalAmount * gstRate) / 100;
+  const cgst = gstAmount / 2;
+  const sgst = gstAmount / 2;
 
   return (
     <div id="printable-invoice" className="p-6 max-w-4xl mx-auto bg-white border shadow print:bg-white">
-      <h2 className="text-center text-lg font-semibold mb-2">TAX INVOICE</h2>
-      <p className="text-center text-sm mb-4">
-        <strong>Invoice No:</strong> {invoice.invoiceNumber || "N/A"}
-      </p>
+      <h2 className="text-center text-lg font-semibold mb-2">
+        {isGST ? "TAX INVOICE" : "INVOICE"}
+      </h2>
+
+      {!isGST && (
+        <h1 className="text-2xl font-bold text-center mb-4">ESTIMATED BILL</h1>
+      )}
 
       <div className="flex justify-between items-start border-b pb-2">
-        <div>
-          <h1 className="text-xl font-bold">DEV JYOTI TEXTILE</h1>
-          <p>Shori Cloth Market, Rohtak - 124001</p>
-          <p className="text-red-600 font-semibold">GSTIN: 06BSSPJ8369N1ZN</p>
-          <p>Mobile: 9812183950</p>
-        </div>
-        <div className="text-right text-sm">
-          <p><strong>Date:</strong> {moment(invoice.createdAt).format("DD MMM YYYY, hh:mm A")}</p>
+        {isGST && (
+          <div>
+            <h1 className="text-xl font-bold">DEV JYOTI TEXTILE</h1>
+            <p>Shori Cloth Market, Rohtak - 124001</p>
+            <p className="text-red-600 font-semibold">GSTIN: 06BSSPJ8369N1ZN</p>
+            <p>Mobile: 9812183950</p>
+          </div>
+        )}
+        <div className="text-right text-sm min-w-[200px]">
+          <p><strong>Invoice No:</strong> {invoice.invoiceNumber || "N/A"}</p>
+          <p><strong>Dated:</strong> {moment(invoice.createdAt).format("DD MMM YYYY, hh:mm A")}</p>
         </div>
       </div>
 
-      <div className="mb-4 border-b pb-2 mt-4">
-        <p><strong>Customer:</strong> {invoice.customerName}</p>
-        <p><strong>Address:</strong> {invoice.customerAddress}</p>
-        <p><strong>GSTIN:</strong> {invoice.customerGST}</p>
-        <p><strong>State:</strong> {invoice.customerState}</p>
-      </div>
+      {isGST && (
+        <div className="mb-4 border-b pb-2 mt-4">
+          <p><strong>Customer:</strong> {invoice.customerName}</p>
+          <p><strong>Address:</strong> {invoice.customerAddress}</p>
+          <p><strong>GSTIN:</strong> {invoice.customerGST}</p>
+          <p><strong>State:</strong> {invoice.customerState}</p>
+        </div>
+      )}
+
+      {!isGST && (
+        <div className="mb-4 border-b pb-2 mt-4">
+          <p><strong>Name:</strong> {invoice.customerName}</p>
+          <p><strong>Phone:</strong> {invoice.customerPhone}</p>
+          <p><strong>Address:</strong> {invoice.customerAddress}</p>
+          <p><strong>GSTIN:</strong> {invoice.customerGST}</p>
+          <p><strong>State:</strong> {invoice.customerState}</p>
+        </div>
+      )}
 
       <table className="w-full text-sm border border-collapse">
         <thead className="bg-gray-100">
@@ -78,7 +101,7 @@ const InvoiceViewer = ({ invoiceId }: Props) => {
           {invoice.items?.map((item: any, i: number) => (
             <tr key={i}>
               <td className="border p-1 text-center">{item.name}</td>
-              <td className="border p-1 text-center">{item.hsn || "–"}</td> 
+              <td className="border p-1 text-center">{item.hsn || "–"}</td>
               <td className="border p-1 text-center">{item.quantity}</td>
               <td className="border p-1 text-center">₹{item.price}</td>
               <td className="border p-1 text-center">₹{item.totalPrice}</td>
@@ -89,12 +112,13 @@ const InvoiceViewer = ({ invoiceId }: Props) => {
 
       <div className="mt-4 text-right text-sm">
         <p><strong>Gross:</strong> ₹{invoice.totalAmount?.toFixed(2)}</p>
-        {(invoice.withGST || invoice.gstRate > 0) && (
-  <>
-    <p>CGST @{invoice.gstRate / 2}%: ₹{((invoice.totalAmount * invoice.gstRate) / 200).toFixed(2)}</p>
-    <p>SGST @{invoice.gstRate / 2}%: ₹{((invoice.totalAmount * invoice.gstRate) / 200).toFixed(2)}</p>
-  </>
-)}
+
+        {isGST && (
+          <>
+            <p>CGST @{gstRate / 2}%: ₹{cgst.toFixed(2)}</p>
+            <p>SGST @{gstRate / 2}%: ₹{sgst.toFixed(2)}</p>
+          </>
+        )}
 
         <p className="text-lg font-bold">
           Total: ₹{invoice.totalAmountWithGST?.toFixed(2) || invoice.totalAmount?.toFixed(2)}

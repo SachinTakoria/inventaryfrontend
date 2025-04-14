@@ -1,3 +1,4 @@
+// ✅ Full updated MyBills.tsx
 import { useEffect, useState } from "react";
 import moment from "moment";
 import InvoiceViewer from "./InvoiceViewer";
@@ -8,43 +9,73 @@ const MyBills = () => {
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
 
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [selectedInvoiceNumber, setSelectedInvoiceNumber] = useState("");
+  const [amountToPay, setAmountToPay] = useState("");
+
   const page = 1;
   const firm = "devjyoti";
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) return;
-
-      try {
-        const res = await fetch(
-          `${import.meta.env.VITE_BACKEND_URL}/orders/get-orders?page=${page}&firm=${firm}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data = await res.json();
-
-        if (data.orders?.length > 0) {
-          // console.log("📦 All Orders:", data.orders.map((o: any) => o.createdAt));
-
-
-          setOrders(data.orders);
-          // console.log("📦 Orders Data", data.orders);
-
-        } else {
-          setOrders([]);
-        }
-      } catch (err) {
-        // console.error("Error fetching orders:", err);
-      }
-    };
-
     fetchOrders();
   }, []);
+
+  const fetchOrders = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/orders/get-orders?page=${page}&firm=${firm}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+
+      if (data.orders?.length > 0) {
+        setOrders(data.orders);
+      } else {
+        setOrders([]);
+      }
+    } catch (err) {
+    
+    }
+  };
+
+  const handlePaymentUpdate = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/orders/update-payment/${selectedInvoiceNumber.replace("/", "%2F")}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ amountPaid: Number(amountToPay) }),
+        }
+      );
+
+      const data = await res.json();
+      if (data.success) {
+        alert("✅ Payment updated");
+        setAmountToPay("");
+        setShowPayModal(false);
+        fetchOrders();
+      } else {
+        alert("❌ Failed to update payment");
+      }
+    } catch (err) {
+      alert("❌ Error occurred");
+    }
+  };
 
   const filteredOrders = orders.filter((bill) => {
     const search = searchTerm.toLowerCase();
@@ -52,41 +83,32 @@ const MyBills = () => {
       bill.invoiceNumber?.toLowerCase().includes(search) ||
       bill.customerName?.toLowerCase().includes(search) ||
       bill.customerPhone?.toLowerCase().includes(search) ||
-      moment(bill.createdAt)
-        .format("DD MMM YYYY, hh:mm A")
-        .toLowerCase()
-        .includes(search)
+      moment(bill.createdAt).format("DD MMM YYYY, hh:mm A").toLowerCase().includes(search)
     );
   });
-
 
   const groupFilteredOrders = () => {
     const today = moment().startOf("day");
     const yesterday = moment().subtract(1, "day").startOf("day");
-  
+
     const todayOrders = filteredOrders.filter((o) =>
       moment.utc(o.createdAt).local().isSame(today, "day")
     );
-  
+
     const yesterdayOrders = filteredOrders.filter((o) =>
       moment.utc(o.createdAt).local().isSame(yesterday, "day")
     );
-  
+
     const olderOrders = filteredOrders.filter(
       (o) =>
         !moment(o.createdAt).isSame(today, "day") &&
         !moment(o.createdAt).isSame(yesterday, "day")
     );
-    
-  
+
     return { todayOrders, yesterdayOrders, olderOrders };
   };
-  
-  
-  
-  const { todayOrders, yesterdayOrders, olderOrders } = groupFilteredOrders();
 
-  
+  const { todayOrders, yesterdayOrders, olderOrders } = groupFilteredOrders();
 
   const openModal = (id: string) => {
     setSelectedInvoiceId(id);
@@ -101,12 +123,36 @@ const MyBills = () => {
   const handleDownload = () => {
     const printContents = document.getElementById("printable-invoice")?.innerHTML;
     const printWindow = window.open("", "_blank");
+  
     if (printWindow && printContents) {
-      printWindow.document.write(`<html><head><title>Invoice</title></head><body>${printContents}</body></html>`);
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Invoice</title>
+            <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+            <style>
+              @media print {
+                body {
+                  -webkit-print-color-adjust: exact;
+                }
+              }
+            </style>
+          </head>
+          <body class="bg-white p-6">
+            ${printContents}
+          </body>
+        </html>
+      `);
       printWindow.document.close();
-      printWindow.print();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 500); // delay needed for styles to apply
     }
   };
+  
+  
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -138,6 +184,7 @@ const MyBills = () => {
                     <th className="px-6 py-3">Mobile No.</th>
                     <th className="px-6 py-3 text-center">Products</th>
                     <th className="px-6 py-3">Date</th>
+                    <th className="px-6 py-3">Status</th>
                     <th className="px-6 py-3 text-center">Actions</th>
                   </tr>
                 </thead>
@@ -149,12 +196,28 @@ const MyBills = () => {
                       <td className="px-6 py-4 text-gray-700">{bill.customerPhone || "N/A"}</td>
                       <td className="px-6 py-4 text-center">{bill.items?.length || 0}</td>
                       <td className="px-6 py-4 text-gray-700">{moment(bill.createdAt).format("DD MMM YYYY, hh:mm A")}</td>
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-4">
+                        {bill.carryForward === 0 ? (
+                          <span className="text-green-600 font-semibold">PAID ✅</span>
+                        ) : (
+                          <span className="text-red-600">Pending: ₹{bill.carryForward}</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center space-x-2">
                         <button
                           onClick={() => openModal(bill._id)}
-                          className="text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center gap-1"
+                          className="text-blue-600 hover:text-blue-800 font-medium"
                         >
-                          🔍 <span>View</span>
+                          🔍 View
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedInvoiceNumber(bill.invoiceNumber);
+                            setShowPayModal(true);
+                          }}
+                          className="text-green-600 hover:text-green-800 font-medium"
+                        >
+                          💰 Update
                         </button>
                       </td>
                     </tr>
@@ -166,6 +229,7 @@ const MyBills = () => {
         </div>
       ))}
 
+      {/* Invoice Modal */}
       {showModal && selectedInvoiceId && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
           <div className="bg-white rounded-xl w-[90%] h-[90%] relative overflow-y-auto">
@@ -176,15 +240,46 @@ const MyBills = () => {
               ✕
             </button>
             <button
-              onClick={handleDownload}
-              className="absolute top-4 right-16 text-blue-700 hover:text-blue-900 text-lg"
-              title="Download/Print Invoice"
-            >
-              🖨️
-            </button>
+  onClick={handleDownload}
+  className="absolute top-4 right-16 text-blue-700 hover:text-blue-900 text-lg no-print"
+  title="Download/Print Invoice"
+>
+  🖨️
+</button>
+
 
             <div className="p-6 overflow-y-auto h-full">
               <InvoiceViewer invoiceId={selectedInvoiceId} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update Payment Modal */}
+      {showPayModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-[300px]">
+            <h2 className="text-xl font-bold mb-4">Update Payment</h2>
+            <input
+              type="number"
+              placeholder="Enter amount received"
+              value={amountToPay}
+              onChange={(e) => setAmountToPay(e.target.value)}
+              className="w-full px-3 py-2 border rounded mb-4"
+            />
+            <div className="flex justify-between">
+              <button
+                onClick={() => setShowPayModal(false)}
+                className="bg-gray-400 text-white px-4 py-2 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePaymentUpdate}
+                className="bg-blue-600 text-white px-4 py-2 rounded"
+              >
+                Submit
+              </button>
             </div>
           </div>
         </div>
