@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import moment from "moment";
 import QRCode from "react-qr-code";
+import { toWords } from "number-to-words";
+
 
 interface Props {
   invoiceId: string;
@@ -37,9 +39,29 @@ const InvoiceViewer2 = ({ invoiceId }: Props) => {
   if (loading) return <div className="p-4 text-center">Loading invoice...</div>;
   if (!invoice) return <div className="p-4 text-center">Invoice not found</div>;
 
-  const gstAmount = (invoice.totalAmount * invoice.gstRate) / 100;
-  const cgst = gstAmount / 2;
-  const sgst = gstAmount / 2;
+// ✅ Step 1: Gross amount
+const itemTotal = invoice.items?.reduce(
+  (sum: number, item: any) => sum + item.quantity * item.price,
+  0
+);
+
+// ✅ Step 2: Real discount calculation using percentage
+const discountPercent = invoice.discountPercent || 0;
+const discountAmount = (itemTotal * discountPercent) / 100;
+
+// ✅ Step 3: Subtotal after discount
+const subtotalAfterDiscount = itemTotal - discountAmount;
+
+// ✅ Step 4: GST calculation on discounted subtotal
+const gstAmount = (subtotalAfterDiscount * invoice.gstRate) / 100;
+const cgst = gstAmount / 2;
+const sgst = gstAmount / 2;
+
+// ✅ Step 5: Final total
+const totalWithGST = subtotalAfterDiscount + gstAmount;
+
+  
+
 
   return (
     <div id="printable-invoice" className="p-6 max-w-5xl mx-auto bg-white border shadow print:bg-white">
@@ -47,49 +69,56 @@ const InvoiceViewer2 = ({ invoiceId }: Props) => {
         TAX INVOICE
       </h2>
 
-      <div className="flex justify-between items-start gap-4 border-b pb-4">
-        <div className="w-[60%]">
-          <h1 className="text-2xl font-bold">HIMANSHI TEXTILES</h1>
-          <p className="text-sm mt-1">
-            GROUND FLOOR, 2449, CHOUDHRY BHAWAN, TELIPARA, JAIPUR
-          </p>
-          <p className="text-sm font-semibold text-red-600 mt-1">
-            GSTIN/UIN: 08GNYPS6300G1ZD | M: 9971745882
-          </p>
-          <p className="text-sm font-semibold text-black mt-1">
-            State Name: Rajasthan, Code: 08
-          </p>
+      <div className="flex justify-between items-start gap-4 pb-4">
+  {/* ✅ LEFT SIDE: FIRM + CONSIGNEE + BUYER */}
+  <div className="w-[60%] border border-black p-4 text-sm rounded-md min-h-[340px] flex flex-col justify-between">
+    {/* Firm Info */}
+    <div>
+      <h1 className="text-2xl font-bold">HIMANSHI TEXTILES</h1>
+      <p className="mt-1">GROUND FLOOR, 2449, CHOUDHRY BHAWAN, TELIPARA, JAIPUR</p>
+      <p className="text-red-600 font-semibold mt-1">GSTIN/UIN: 08GNYPS6300G1ZD | M: 9971745882</p>
+      <p className="font-semibold mt-1">State Name: Rajasthan, Code: 08</p>
+    </div>
 
-          {/* CONSIGNEE PLACEHOLDER */}
-          <div className="mt-4 text-sm">
-            <h3 className="font-semibold">CONSIGNEE (SHIP TO)</h3>
-            <p>dfgdfgd</p>
-            <p>ttgyfyt</p>
-            <p>GSTIN/UIN: 54456gfd</p>
-            <p>PAN/IT No: rg</p>
-            <p>State Name: gft</p>
-          </div>
-        </div>
+    {/* Consignee */}
+    <div className="mt-4 border-t pt-2">
+      <h3 className="font-semibold">Consignee (Ship To)</h3>
+      <p><strong>{invoice.consignee?.name || "N/A"}</strong></p>
+      <p>{invoice.consignee?.address || "N/A"}</p>
+      <p>GSTIN/UIN: {invoice.consignee?.gstin || "N/A"}</p>
+      <p>PAN/IT No: {invoice.consignee?.pan || "N/A"}</p>
+      <p>State Name: {invoice.consignee?.state || "N/A"}</p>
+    </div>
 
-        <div className="w-[40%] flex flex-col items-end text-right text-xs font-medium leading-snug">
-          <QRCode value={window.location.href} size={120} />
-          <p className="mt-2">
-            <strong>Invoice No:</strong> {invoice.invoiceNumber || "N/A"}
-          </p>
-          <p>
-            <strong>Dated:</strong> {moment(invoice.createdAt).format("DD MMM, YYYY")}
-          </p>
-        </div>
-      </div>
+    {/* Buyer Info */}
+    <div className="mt-4 border-t pt-2">
+      <h3 className="font-bold pb-1 mb-2">Buyer (Bill To)</h3>
+      <p><strong>Name:</strong> {invoice.customerName || "N/A"}</p>
+      <p><strong>Phone:</strong> {invoice.customerPhone || "N/A"}</p>
+      <p><strong>Address:</strong> {invoice.customerAddress || "N/A"}</p>
+      <p><strong>GSTIN:</strong> {invoice.customerGST || "N/A"}</p>
+      <p><strong>State:</strong> {invoice.customerState || "N/A"}</p>
+    </div>
+  </div>
 
-      <div className="mt-4 text-sm border-b pb-3">
-        <h3 className="font-semibold mb-1">Buyer (Bill To)</h3>
-        <p><strong>Name:</strong> {invoice.customerName}</p>
-        <p><strong>Phone:</strong> {invoice.customerPhone}</p>
-        <p><strong>Address:</strong> {invoice.customerAddress}</p>
-        <p><strong>GSTIN:</strong> {invoice.customerGST}</p>
-        <p><strong>State:</strong> {invoice.customerState}</p>
-      </div>
+  {/* ✅ RIGHT SIDE: QR + Invoice Table */}
+  <div className="w-[40%] border border-black p-4 rounded-md text-xs font-medium min-h-[440px] flex flex-col items-end text-right">
+    <div className="w-full flex justify-end">
+      <QRCode value={window.location.href} size={140} />
+    </div>
+    <table className="w-full mt-1 border border-black text-[11px]">
+      <tbody>
+        <tr><td className="border px-2 py-3 font-semibold w-[40%]">Invoice No</td><td className="border px-2 py-1 text-right">{invoice.invoiceNumber || "N/A"}</td></tr>
+        <tr><td className="border px-2 py-3 font-semibold">Dated</td><td className="border px-2 py-1 text-right">{moment(invoice.createdAt).format("DD MMM, YYYY")}</td></tr>
+        <tr><td className="border px-2 py-3 font-semibold">Delivery Note</td><td className="border px-2 py-1 text-right">_</td></tr>
+        <tr><td className="border px-2 py-3 font-semibold">Reference No. & Date</td><td className="border px-2 py-1 text-right">Other References</td></tr>
+        <tr><td className="border px-2 py-3 font-semibold">Dispatch Doc No.</td><td className="border px-2 py-1 text-right">Delivery Note Date</td></tr>
+        <tr><td className="border px-2 py-3 font-semibold">Dispatched through</td><td className="border px-2 py-1 text-right">Destination</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
 
       <table className="w-full border mt-4 text-sm">
         <thead className="bg-gray-100">
@@ -110,40 +139,64 @@ const InvoiceViewer2 = ({ invoiceId }: Props) => {
               <td className="border text-center py-1">{item.hsn || "–"}</td>
               <td className="border text-center py-1">{item.quantity}</td>
               <td className="border text-center py-1">₹{item.price}</td>
-              <td className="border text-center py-1">₹{item.totalPrice}</td>
+              <td className="border text-center py-1">₹{(item.quantity * item.price).toFixed(2)}</td>
+
             </tr>
           ))}
         </tbody>
       </table>
 
+
+
+
       <div className="mt-4 font-semibold text-sm w-full flex justify-end">
-        <div className="border border-black p-2 w-full md:w-[350px] text-xs">
-          <div className="grid grid-cols-2 gap-[2px]">
-            {invoice.withGST && (
-              <>
-                <div className="border border-gray-400 px-2 py-1">Gross</div>
-                <div className="border border-gray-400 px-2 py-1 text-right">
-                  ₹{invoice.totalAmount.toFixed(2)}
-                </div>
-
-                <div className="border border-gray-400 px-2 py-1">CGST @{invoice.gstRate / 2}%</div>
-                <div className="border border-gray-400 px-2 py-1 text-right">₹{cgst.toFixed(2)}</div>
-
-                <div className="border border-gray-400 px-2 py-1">SGST @{invoice.gstRate / 2}%</div>
-                <div className="border border-gray-400 px-2 py-1 text-right">₹{sgst.toFixed(2)}</div>
-              </>
-            )}
-            <div className="border border-gray-400 px-2 py-1 font-bold">Total</div>
-            <div className="border border-gray-400 px-2 py-1 text-right font-bold">
-              ₹{invoice.totalAmountWithGST?.toFixed(2) || invoice.totalAmount.toFixed(2)}
-            </div>
-          </div>
-        </div>
+  <div className="border border-black p-2 w-full md:w-[350px] text-xs">
+    <div className="grid grid-cols-2 gap-[2px]">
+      
+      {/* ✅ Gross */}
+      <div className="border border-gray-400 px-2 py-1">Gross</div>
+      <div className="border border-gray-400 px-2 py-1 text-right">
+        ₹{itemTotal.toFixed(2)}
       </div>
+
+      {/* ✅ Discount (only if available) */}
+      {(invoice.discountPercent > 0 || invoice.discountAmount > 0) && (
+        <>
+          <div className="border border-gray-400 px-2 py-1 text-red-600">
+            Discount
+            {invoice.discountPercent > 0 && ` @${invoice.discountPercent}%`}
+          </div>
+          <div className="border border-gray-400 px-2 py-1 text-right text-red-600">
+            – ₹{invoice.discountAmount?.toFixed(2)}
+          </div>
+        </>
+      )}
+
+      {/* ✅ GST (only if withGST is true) */}
+      {invoice.withGST && (
+        <>
+          <div className="border border-gray-400 px-2 py-1">CGST @{invoice.gstRate / 2}%</div>
+          <div className="border border-gray-400 px-2 py-1 text-right">₹{cgst.toFixed(2)}</div>
+
+          <div className="border border-gray-400 px-2 py-1">SGST @{invoice.gstRate / 2}%</div>
+          <div className="border border-gray-400 px-2 py-1 text-right">₹{sgst.toFixed(2)}</div>
+        </>
+      )}
+
+      {/* ✅ Final Total */}
+      <div className="border border-gray-400 px-2 py-1 font-bold">Total</div>
+      <div className="border border-gray-400 px-2 py-1 text-right font-bold">
+        ₹{totalWithGST.toFixed(2)}
+      </div>
+    </div>
+  </div>
+</div>
+
 
       <div className="mt-2 border border-black p-2 italic text-sm font-semibold">
-        In Words: <strong>{invoice.amountInWords || ""} ONLY</strong>
-      </div>
+  In Words: <strong>{invoice.amountInWords || toWords(Math.round(totalWithGST)).toUpperCase()} ONLY</strong>
+</div>
+
 
       <div className="mt-4 font-semibold text-sm w-full">
         <div className="border border-black p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -185,6 +238,7 @@ const InvoiceViewer2 = ({ invoiceId }: Props) => {
           This is a Computer Generated Invoice. Signature Not Required.
         </p>
       </div>
+
     </div>
   );
 };

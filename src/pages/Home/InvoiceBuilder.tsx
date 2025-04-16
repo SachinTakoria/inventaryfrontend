@@ -25,6 +25,7 @@ const InvoiceBuilder: React.FC = () => {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
+    const [discountPercent, setDiscountPercent] = useState(0);
   const [customerGST, setCustomerGST] = useState("");
   const [customerState, setCustomerState] = useState("");
   const [editableItems, setEditableItems] = useState<EditableItem[]>([
@@ -40,22 +41,19 @@ const InvoiceBuilder: React.FC = () => {
     createdAt?: string;
   } | null>(null);
 
-   const [consignees, setConsignees] = useState<any[]>([]);
-    const [selectedConsignee, setSelectedConsignee] = useState<any>(null);
-    const [addingNew, setAddingNew] = useState(false);
-    const [editingId, setEditingId] = useState<string | null>(null);
-    const [newConsignee, setNewConsignee] = useState({
-      name: "",
-      address: "",
-      gstin: "",
-      pan: "",
-      state: "",
-    });
-
+  const [consignees, setConsignees] = useState<any[]>([]);
+  const [selectedConsignee, setSelectedConsignee] = useState<any>(null);
+  const [addingNew, setAddingNew] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [newConsignee, setNewConsignee] = useState({
+    name: "",
+    address: "",
+    gstin: "",
+    pan: "",
+    state: "",
+  });
 
   const user = useSelector((state: any) => state.user?.currentUser);
-
-
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -94,8 +92,6 @@ const InvoiceBuilder: React.FC = () => {
     fetchPreviousPending();
   }, [customerPhone]);
 
-
-
   useEffect(() => {
     const fetchConsignees = async () => {
       const token = localStorage.getItem("token");
@@ -107,7 +103,6 @@ const InvoiceBuilder: React.FC = () => {
     };
     fetchConsignees();
   }, []);
-
 
   const handleProductNameChange = (index: number, value: string) => {
     const updatedItems = [...editableItems];
@@ -173,8 +168,11 @@ const InvoiceBuilder: React.FC = () => {
     (sum, item) => sum + item.totalPrice,
     0
   );
-  const gstAmount = withGST ? (finalPrice * gstRate) / 100 : 0;
-  const totalAmount = finalPrice + gstAmount;
+  const discountAmount = (finalPrice * discountPercent) / 100;
+
+  const priceAfterDiscount = finalPrice - discountAmount;
+  const gstAmount = withGST ? (priceAfterDiscount * gstRate) / 100 : 0;
+  const totalAmount = priceAfterDiscount + gstAmount;
 
   const generateInvoiceAndUpdateStock = async () => {
     document.activeElement instanceof HTMLElement &&
@@ -236,11 +234,14 @@ const InvoiceBuilder: React.FC = () => {
           customerAddress,
           customerGST,
           customerState,
+          discountPercent,
+          discountAmount,
           items: itemsToSave,
           amountPaid,
           withGST, // ✅ Add this line
           gstRate, // ✅ And this
           totalAmount,
+          consignee: selectedConsignee,
           oldPendingAdjusted,
           carryForward:
             totalAmount + previousPending - (amountPaid + oldPendingAdjusted),
@@ -277,7 +278,7 @@ const InvoiceBuilder: React.FC = () => {
             customerGST,
             customerPhone,
             customerState,
-            firm: "devjyoti", 
+            firm: "devjyoti",
             items: editableItems.map((item) => ({
               name: item.name,
               price: item.price,
@@ -287,6 +288,7 @@ const InvoiceBuilder: React.FC = () => {
             })),
             totalAmount: totalAmount,
             withGST,
+            consignee: selectedConsignee,
             gstRate,
             totalAmountWithGST: totalAmount + gstAmount,
           }),
@@ -301,24 +303,22 @@ const InvoiceBuilder: React.FC = () => {
             createdAt: invoiceData.invoice.createdAt,
           });
 
-          
-
-
-          await fetch(`${BASE_URL}/orders/update-invoice-number/${data.order._id}`, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              invoiceNumber: invoiceData.invoice.invoiceNumber,
-            }),
-          });
-
+          await fetch(
+            `${BASE_URL}/orders/update-invoice-number/${data.order._id}`,
+            {
+              method: "PATCH",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                invoiceNumber: invoiceData.invoice.invoiceNumber,
+              }),
+            }
+          );
         }
 
         setIsGeneratingPDF(true);
-        
 
         if (!user || !user._id) {
           alert("❌ User not found. Please login again.");
@@ -413,14 +413,14 @@ const InvoiceBuilder: React.FC = () => {
       <div>
         {/* CONTROLS */}
         <div className="print:hidden flex flex-wrap gap-4 mb-4">
-        <label className="flex items-center gap-2 text-sm">
-    <input
-      type="checkbox"
-      checked={withGST}
-      onChange={(e) => setWithGST(e.target.checked)}
-    />
-    With GST
-  </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={withGST}
+              onChange={(e) => setWithGST(e.target.checked)}
+            />
+            With GST
+          </label>
           <select
             className="border px-2 py-1 text-sm"
             value={gstRate}
@@ -450,222 +450,409 @@ const InvoiceBuilder: React.FC = () => {
           className="p-6 border border-gray-300 print:bg-white"
           style={{ backgroundColor: getBackgroundColor() }}
         >
-     <h2 className="text-md font-bold text-center mb-6 border-b border-black pb-2">
-  {withGST ? "TAX INVOICE" : "INVOICE"}
-</h2>
+          <h2 className="text-md font-bold text-center mb-6 border-b border-black pb-2">
+            {withGST ? "TAX INVOICE" : "INVOICE"}
+          </h2>
 
-{/* ESTIMATED BILL - shown only if withGST is false */}
-{!withGST && (
-  <div className="flex justify-between items-start mb-4">
-    <div className="w-full text-center">
-      <h1 className="text-2xl font-bold">ESTIMATED BILL</h1>
-    </div>
-    <div className="text-right text-[11px] font-medium leading-snug min-w-[200px]">
-      <p className="mt-2">
-        <strong>Invoice No:</strong> <span>{orderData?.invoiceNumber || "N/A"}</span>
-      </p>
-      <p>
-        <strong>Dated:</strong> <span>{moment(orderData?.createdAt).format("DD MMM, YYYY")}</span>
-      </p>
-    </div>
-  </div>
-)}
-
-
-
-
-
-          {/* HEADER */}
-          <div className="flex justify-between items-start gap-4 border-b pb-4">
-  {/* LEFT SIDE: Firm + Consignee - Only visible when withGST is true */}
-  {withGST && (
-    <div className="w-[60%]">
-      <h1 className="text-2xl font-bold">DEV JYOTI TEXTILES</h1>
-      <p className="text-sm mt-1">SHORI CLOTH MARKET ,ROHTAK-124001</p>
-      <p className="text-sm font-semibold text-red-600 mt-1">GSTIN/UIN: 06BSSPJ8369N1ZN | M: 9812183950</p>
-      <p className="text-sm font-semibold text-black mt-1">State Name: HARYANA 124001</p>
-
-      {/* ✅ NEW BLOCK: Consignee (Ship To) Static Details */}
-      <div className="mt-4">
-        <div className="flex justify-between items-center print:hidden">
-          <h3 className="font-semibold">CONSIGNEE (SHIP TO)</h3>
-          {!isGeneratingPDF && (
-            <div className="flex items-center gap-2 mb-2 justify-end">
-              <select className="border px-2 py-1 text-sm" onChange={(e) => {
-                const selected = consignees.find((c) => c._id === e.target.value);
-                setSelectedConsignee(selected);
-              }}>
-                <option value="">Select Consignee</option>
-                {consignees.map((c) => (
-                  <option key={c._id} value={c._id}>{c.name}</option>
-                ))}
-              </select>
-              <button className="text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600" onClick={() => {
-                setAddingNew(true);
-                setEditingId(null);
-                setNewConsignee({ name: "", address: "", gstin: "", pan: "", state: "" });
-              }}>➕</button>
+          {/* ESTIMATED BILL - shown only if withGST is false */}
+          {!withGST && (
+            <div className="mb-6 text-center">
+              <h1 className="text-2xl font-bold mb-1">ESTIMATED BILL</h1>
+              <p className="text-sm">
+                <strong>Invoice No:</strong> {orderData?.invoiceNumber || "N/A"}
+              </p>
+              <p className="text-sm">
+                <strong>Dated:</strong>{" "}
+                {moment(orderData?.createdAt).format("DD MMM, YYYY")}
+              </p>
             </div>
           )}
-        </div>
-        {selectedConsignee && !addingNew && (
-          <div className="text-sm mt-1">
-            <p className="font-bold">{selectedConsignee.name}</p>
-            <p>{selectedConsignee.address}</p>
-            <p>GSTIN/UIN: {selectedConsignee.gstin}</p>
-            <p>PAN/IT No: {selectedConsignee.pan}</p>
-            <p>State Name: {selectedConsignee.state}</p>
-            {!isGeneratingPDF && (
-              <div className="print:hidden mt-2 flex gap-2">
-                <button className="text-blue-600 text-sm" onClick={() => {
-                  setEditingId(selectedConsignee._id);
-                  setNewConsignee({ ...selectedConsignee });
-                  setAddingNew(true);
-                }}>✏️</button>
-                <button className="text-red-600 text-sm" onClick={() => handleDeleteConsignee(selectedConsignee._id)}>❌</button>
-              </div>
-            )}
-          </div>
-        )}
-        {addingNew && (
-          <div className="mt-4 space-y-2 print:hidden">
-            {["name", "address", "gstin", "pan", "state"].map((field) => (
+
+          {
+            !withGST && (
+
+              <div className="mt-4 border-t pt-2">
+      <h3 className="font-bold pb-1 mb-2">Buyer (Bill To)</h3>
+      <div className="grid grid-cols-1 gap-2">
+        <p>
+          <strong>Name:</strong>{" "}
+          {isGeneratingPDF ? (
+            <span>{customerName || "N/A"}</span>
+          ) : (
+            <input
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+            />
+          )}
+        </p>
+        <p className="flex items-center gap-2">
+          <strong>Phone:</strong>{" "}
+          {isGeneratingPDF ? (
+            <span>{customerPhone || "N/A"}</span>
+          ) : (
+            <>
               <input
-                key={field}
-                className="w-full border px-3 py-1 text-sm rounded"
-                placeholder={`Enter ${field}`}
-                value={newConsignee[field]}
-                onChange={(e) => setNewConsignee({ ...newConsignee, [field]: e.target.value })}
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
               />
-            ))}
-            <div className="flex gap-2">
-              <button className="bg-blue-500 text-white px-4 py-1 rounded" onClick={handleSaveConsignee}>✅ Save</button>
-              <button className="bg-gray-400 text-white px-4 py-1 rounded" onClick={() => {
-                setAddingNew(false);
+              <button
+                onClick={async () => {
+                  if (!customerPhone || customerPhone.length < 4) {
+                    alert("Please enter valid phone number.");
+                    return;
+                  }
+
+                  try {
+                    const token = localStorage.getItem("token");
+                    const res = await fetch(
+                      `${BASE_URL}/orders/pending?phone=${customerPhone}`,
+                      {
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                      }
+                    );
+                    const data = await res.json();
+                    setPreviousPending(data?.pendingAmount || 0);
+                  } catch (err) {
+                    setPreviousPending(0);
+                  }
+                }}
+                className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600 print:hidden"
+              >
+                🔍
+              </button>
+            </>
+          )}
+        </p>
+        <p>
+          <strong>Address:</strong>{" "}
+          {isGeneratingPDF ? (
+            <span>{customerAddress || "N/A"}</span>
+          ) : (
+            <input
+              value={customerAddress}
+              onChange={(e) => setCustomerAddress(e.target.value)}
+              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+            />
+          )}
+        </p>
+        <p>
+          <strong>GSTIN:</strong>{" "}
+          {isGeneratingPDF ? (
+            <span>{customerGST || "N/A"}</span>
+          ) : (
+            <input
+              value={customerGST}
+              onChange={(e) => setCustomerGST(e.target.value)}
+              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+            />
+          )}
+        </p>
+        <p>
+          <strong>State:</strong>{" "}
+          {isGeneratingPDF ? (
+            <span>{customerState || "N/A"}</span>
+          ) : (
+            <input
+              value={customerState}
+              onChange={(e) => setCustomerState(e.target.value)}
+              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+            />
+          )}
+        </p>
+      </div>
+    </div>
+            )
+          }
+
+
+          
+
+{
+  withGST && (
+<>
+<div className="flex justify-between items-start gap-4 pb-4">
+  {/* ✅ LEFT SIDE: Firm Info + Consignee + Buyer */}
+  <div className="w-[60%] border border-black p-4 text-sm rounded-md min-h-[340px] flex flex-col justify-between">
+    {/* Firm Details */}
+    <div>
+      <h1 className="text-2xl font-bold">DEV JYOTI TEXTILES</h1>
+      <p className="mt-1">Shori Cloth Market, Rohtak - 124001</p>
+      <p className="text-red-600 font-semibold mt-1">
+        GSTIN/UIN: 06BSSPJ8369N1ZN | Mobile: 9812183950
+      </p>
+      <p className="font-semibold mt-1">State Name: HARYANA 124001</p>
+    </div>
+
+    {/* Consignee */}
+    <div className="mt-4 border-t pt-2">
+      <div className="flex justify-between items-center print:hidden">
+        <h3 className="font-semibold">CONSIGNEE (SHIP TO)</h3>
+        {!isGeneratingPDF && (
+          <div className="flex items-center gap-2">
+            <select
+              className="border px-2 py-1 text-sm"
+              onChange={(e) => {
+                const selected = consignees.find(
+                  (c) => c._id === e.target.value
+                );
+                setSelectedConsignee(selected);
+              }}
+            >
+              <option value="">Select Consignee</option>
+              {consignees.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <button
+              className="bg-green-500 text-white px-2 py-1 text-sm rounded hover:bg-green-600"
+              onClick={() => {
+                setAddingNew(true);
                 setEditingId(null);
-                setNewConsignee({ name: "", address: "", gstin: "", pan: "", state: "" });
-              }}>❌ Cancel</button>
-            </div>
+                setNewConsignee({
+                  name: "",
+                  address: "",
+                  gstin: "",
+                  pan: "",
+                  state: "",
+                });
+              }}
+            >
+              ➕
+            </button>
           </div>
         )}
       </div>
-    </div>
-  )}
 
-  {/* ✅ RIGHT SIDE: Invoice Info always visible, QR Code only if withGST */}
-  <div className="w-[40%] flex flex-col items-end text-right text-[11px] font-medium leading-snug">
-  {withGST ? (
-    <>
-      <QRCode value={window.location.href} size={140} />
-      <p className="mt-2">
-        <strong>Invoice No:</strong> <span>{orderData?.invoiceNumber || "N/A"}</span>
-      </p>
-      <p>
-        <strong>Dated:</strong> <span>{moment(orderData?.createdAt).format("DD MMM, YYYY")}</span>
-      </p>
-    </>
-  ) : null}
-</div>
-
-</div>
-
-
-          {/* CUSTOMER INFO SECTION */}
-          <div className="mt-4 text-sm border-b pb-3">
-            <h3 className="font-semibold mb-1">Buyer (Bill To)</h3>
-            <p>
-              <strong>Name:</strong>{" "}
-              <span
-                contentEditable
-                suppressContentEditableWarning={true}
-                onBlur={(e) => setCustomerName(e.target.innerText)}
-                className="outline-none focus:outline-none border-none focus:border-none"
+      {selectedConsignee && !addingNew && (
+        <div className="text-sm mt-2 space-y-[2px]">
+          <p>
+            <strong>{selectedConsignee.name}</strong>
+          </p>
+          <p>{selectedConsignee.address}</p>
+          <p>GSTIN/UIN: {selectedConsignee.gstin}</p>
+          <p>PAN/IT No: {selectedConsignee.pan}</p>
+          <p>State Name: {selectedConsignee.state}</p>
+          {!isGeneratingPDF && (
+            <div className="flex gap-2 mt-1 print:hidden">
+              <button
+                className="text-blue-600 text-sm"
+                onClick={() => {
+                  setEditingId(selectedConsignee._id);
+                  setNewConsignee({ ...selectedConsignee });
+                  setAddingNew(true);
+                }}
               >
-                {customerName}
-              </span>
-            </p>
-
-            <p className="flex items-center gap-2">
-              <strong>Phone:</strong>{" "}
-              <span
-                contentEditable
-                suppressContentEditableWarning={true}
-                onBlur={(e) => setCustomerPhone(e.currentTarget.innerText)}
-                className={`outline-none border-none focus:outline-none ${
-                  isGeneratingPDF
-                    ? ""
-                    : "border-b border-dashed border-gray-400 px-2"
-                }`}
+                ✏️
+              </button>
+              <button
+                className="text-red-600 text-sm"
+                onClick={() =>
+                  handleDeleteConsignee(selectedConsignee._id)
+                }
               >
-                {customerPhone}
-              </span>
-              {!isGeneratingPDF && (
-                <button
-                  onClick={async () => {
-                    if (!customerPhone || customerPhone.length < 4) {
-                      alert("Please enter valid phone number.");
-                      return;
-                    }
+                ❌
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
-                    try {
-                      const token = localStorage.getItem("token");
-                      const res = await fetch(
-                        `${BASE_URL}/orders/pending?phone=${customerPhone}`,
-                        {
-                          headers: {
-                            Authorization: `Bearer ${token}`,
-                          },
-                        }
-                      );
-                      const data = await res.json();
-                      setPreviousPending(data?.pendingAmount || 0);
-                    } catch (err) {
-                      setPreviousPending(0);
-                    }
-                  }}
-                  className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600 print:hidden"
-                >
-                  🔍
-                </button>
-              )}
-            </p>
-
-            <p>
-              <strong>Address:</strong>{" "}
-              <span
-                contentEditable
-                suppressContentEditableWarning={true}
-                onBlur={(e) => setCustomerAddress(e.target.innerText)}
-                className="outline-none focus:outline-none border-none focus:border-none"
-              >
-                {customerAddress}
-              </span>
-            </p>
-
-            <p>
-              <strong>GSTIN:</strong>{" "}
-              <span
-                contentEditable
-                suppressContentEditableWarning={true}
-                onBlur={(e) => setCustomerGST(e.target.innerText)}
-                className="outline-none focus:outline-none border-none focus:border-none"
-              >
-                {customerGST}
-              </span>
-            </p>
-
-            <p>
-              <strong>State:</strong>{" "}
-              <span
-                contentEditable
-                suppressContentEditableWarning={true}
-                onBlur={(e) => setCustomerState(e.target.innerText)}
-                className="outline-none focus:outline-none border-none focus:border-none"
-              >
-                {customerState}
-              </span>
-            </p>
+      {addingNew && (
+        <div className="mt-3 space-y-2 print:hidden">
+          {["name", "address", "gstin", "pan", "state"].map((field) => (
+            <input
+              key={field}
+              className="w-full border px-3 py-1 text-sm rounded"
+              placeholder={`Enter ${field}`}
+              value={newConsignee[field]}
+              onChange={(e) =>
+                setNewConsignee({
+                  ...newConsignee,
+                  [field]: e.target.value,
+                })
+              }
+            />
+          ))}
+          <div className="flex gap-2">
+            <button
+              className="bg-blue-500 text-white px-4 py-1 rounded"
+              onClick={handleSaveConsignee}
+            >
+              ✅ Save
+            </button>
+            <button
+              className="bg-gray-400 text-white px-4 py-1 rounded"
+              onClick={() => {
+                setAddingNew(false);
+                setEditingId(null);
+                setNewConsignee({
+                  name: "",
+                  address: "",
+                  gstin: "",
+                  pan: "",
+                  state: "",
+                });
+              }}
+            >
+              ❌ Cancel
+            </button>
           </div>
+        </div>
+      )}
+    </div>
+
+    {/* Buyer Info */}
+    <div className="mt-4 border-t pt-2">
+      <h3 className="font-bold pb-1 mb-2">Buyer (Bill To)</h3>
+      <div className="grid grid-cols-1 gap-2">
+        <p>
+          <strong>Name:</strong>{" "}
+          {isGeneratingPDF ? (
+            <span>{customerName || "N/A"}</span>
+          ) : (
+            <input
+              value={customerName}
+              onChange={(e) => setCustomerName(e.target.value)}
+              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+            />
+          )}
+        </p>
+        <p className="flex items-center gap-2">
+          <strong>Phone:</strong>{" "}
+          {isGeneratingPDF ? (
+            <span>{customerPhone || "N/A"}</span>
+          ) : (
+            <>
+              <input
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+              />
+              <button
+                onClick={async () => {
+                  if (!customerPhone || customerPhone.length < 4) {
+                    alert("Please enter valid phone number.");
+                    return;
+                  }
+
+                  try {
+                    const token = localStorage.getItem("token");
+                    const res = await fetch(
+                      `${BASE_URL}/orders/pending?phone=${customerPhone}`,
+                      {
+                        headers: {
+                          Authorization: `Bearer ${token}`,
+                        },
+                      }
+                    );
+                    const data = await res.json();
+                    setPreviousPending(data?.pendingAmount || 0);
+                  } catch (err) {
+                    setPreviousPending(0);
+                  }
+                }}
+                className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600 print:hidden"
+              >
+                🔍
+              </button>
+            </>
+          )}
+        </p>
+        <p>
+          <strong>Address:</strong>{" "}
+          {isGeneratingPDF ? (
+            <span>{customerAddress || "N/A"}</span>
+          ) : (
+            <input
+              value={customerAddress}
+              onChange={(e) => setCustomerAddress(e.target.value)}
+              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+            />
+          )}
+        </p>
+        <p>
+          <strong>GSTIN:</strong>{" "}
+          {isGeneratingPDF ? (
+            <span>{customerGST || "N/A"}</span>
+          ) : (
+            <input
+              value={customerGST}
+              onChange={(e) => setCustomerGST(e.target.value)}
+              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+            />
+          )}
+        </p>
+        <p>
+          <strong>State:</strong>{" "}
+          {isGeneratingPDF ? (
+            <span>{customerState || "N/A"}</span>
+          ) : (
+            <input
+              value={customerState}
+              onChange={(e) => setCustomerState(e.target.value)}
+              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+            />
+          )}
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {/* ✅ RIGHT SIDE: QR + Invoice Table */}
+  <div className="w-[40%] border border-black p-4 rounded-md text-xs font-medium min-h-[480px] flex flex-col items-end text-right">
+    <div className="w-full flex justify-end">
+      <QRCode value={window.location.href} size={140} />
+    </div>
+    <table className="w-full mt-1 border border-black text-[11px]">
+      <tbody>
+        <tr>
+          <td className="border px-2 py-3 font-semibold w-[40%]">Invoice No</td>
+          <td className="border px-2 py-1 text-right">
+            {orderData?.invoiceNumber || "N/A"}
+          </td>
+        </tr>
+        <tr>
+          <td className="border px-2 py-3 font-semibold">Dated</td>
+          <td className="border px-2 py-1 text-right">
+            {moment(orderData?.createdAt).format("DD MMM, YYYY")}
+          </td>
+        </tr>
+        <tr>
+          <td className="border px-2 py-3 font-semibold">Delivery Note</td>
+          <td className="border px-2 py-1 text-right">_</td>
+        </tr>
+        <tr>
+          <td className="border px-2 py-3 font-semibold">
+            Reference No. & Date
+          </td>
+          <td className="border px-2 py-1 text-right">Other References</td>
+        </tr>
+        <tr>
+          <td className="border px-2 py-3 font-semibold">Dispatch Doc No.</td>
+          <td className="border px-2 py-1 text-right">Delivery Note Date</td>
+        </tr>
+        <tr>
+          <td className="border px-2 py-3 font-semibold">
+            Dispatched through
+          </td>
+          <td className="border px-2 py-1 text-right">Destination</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+</>
+
+  )
+}
+
 
           {/* PRODUCT TABLE */}
           <table className="w-full border mt-4 text-sm">
@@ -793,18 +980,54 @@ const InvoiceBuilder: React.FC = () => {
           </table>
 
           {/* TOTAL SECTION */}
-          <div className="mt-4 font-semibold text-sm w-full flex justify-end">
+          {!isGeneratingPDF && (
+            <div className="flex justify-end mt-4">
+              <div className="text-sm flex items-center gap-2">
+                <label htmlFor="discount" className="font-medium">
+                  Apply Discount (%):
+                </label>
+                <select
+                  id="discount"
+                  value={discountPercent}
+                  onChange={(e) => setDiscountPercent(Number(e.target.value))}
+                  className="border px-2 py-1 rounded"
+                >
+                  <option value={0}>None</option>
+                  <option value={1}>1%</option>
+                  <option value={2}>2%</option>
+                  <option value={3}>3%</option>
+                  <option value={4}>4%</option>
+                  <option value={5}>5%</option>
+                </select>
+              </div>
+            </div>
+          )}
+
+          {/* ✅ GST + Discount + Final Total */}
+          <div className="mt-2 font-semibold text-sm w-full flex justify-end">
             <div className="border border-black p-2 w-full md:w-[350px] text-xs">
               <div className="grid grid-cols-2 gap-[2px]">
-                {withGST && (
+                {/* Gross */}
+                <div className="border border-gray-400 px-2 py-1">Gross</div>
+                <div className="border border-gray-400 px-2 py-1 text-right">
+                  ₹{finalPrice.toFixed(2)}
+                </div>
+
+                {/* Discount (only if applied) */}
+                {discountPercent > 0 && (
                   <>
                     <div className="border border-gray-400 px-2 py-1">
-                      Gross
+                      Discount @{discountPercent}%
                     </div>
                     <div className="border border-gray-400 px-2 py-1 text-right">
-                      ₹{finalPrice.toFixed(2)}
+                      – ₹{discountAmount.toFixed(2)}
                     </div>
+                  </>
+                )}
 
+                {/* GST (if applicable) */}
+                {withGST && (
+                  <>
                     <div className="border border-gray-400 px-2 py-1">
                       CGST @{gstRate / 2}%
                     </div>
@@ -820,6 +1043,8 @@ const InvoiceBuilder: React.FC = () => {
                     </div>
                   </>
                 )}
+
+                {/* Final Total */}
                 <div className="border border-gray-400 px-2 py-1 font-bold">
                   Total
                 </div>
@@ -829,6 +1054,9 @@ const InvoiceBuilder: React.FC = () => {
               </div>
             </div>
           </div>
+
+
+
 
           {/* IN WORDS - separate row below total */}
           <div className="mt-2 border border-black p-2 italic text-sm font-semibold">
