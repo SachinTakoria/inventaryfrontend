@@ -708,7 +708,7 @@ const getInvoiceLink = (invoiceNumber: string) => {
             {/* ✅ RIGHT SIDE: QR + Invoice Table */}
             <div className="w-[34%] p-4 text-xs font-medium min-h-[480px] flex flex-col items-end text-right">
               <div className="w-full flex justify-end mb-3">
-                <QRCode  value={getInvoiceLink(orderData?.invoiceNumber || "preview")} size={140} />
+                <QRCode  value={`https://djtextile.in/invoice-view/${orderData?.invoiceNumber}`} size={140} />
               </div>
               <table className="w-[105%]  border border-black text-[13px] ">
                 <tbody>
