@@ -25,7 +25,7 @@ const InvoiceBuilder: React.FC = () => {
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
   const [customerAddress, setCustomerAddress] = useState("");
-    const [discountPercent, setDiscountPercent] = useState(0);
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [customerGST, setCustomerGST] = useState("");
   const [customerState, setCustomerState] = useState("");
   const [editableItems, setEditableItems] = useState<EditableItem[]>([
@@ -36,6 +36,7 @@ const InvoiceBuilder: React.FC = () => {
   const [previousPending, setPreviousPending] = useState(0);
   const [oldPendingAdjusted, setOldPendingAdjusted] = useState(0);
   const [amountPaid, setAmountPaid] = useState(0);
+  const [invoiceDate, setInvoiceDate] = useState(new Date()); // NEW STATE
   const [orderData, setOrderData] = useState<{
     invoiceNumber?: string;
     createdAt?: string;
@@ -159,9 +160,11 @@ const InvoiceBuilder: React.FC = () => {
   };
 
   const getBackgroundColor = () => {
-    if (bgColor === "white") return "#ffc0cb";
-    if (bgColor === "yellow") return "#fff9c4";
-    return "#ffffff";
+    if (bgColor === "white") return "#ffffff";
+    if (bgColor === "pink") return "#ffc0cb"; // pink → light pink
+    if (bgColor === "yellow") return "#fff9c4"; // yellow → light yellow
+     
+    return "#ffffff"; // fallback
   };
 
   const finalPrice = editableItems.reduce(
@@ -173,6 +176,18 @@ const InvoiceBuilder: React.FC = () => {
   const priceAfterDiscount = finalPrice - discountAmount;
   const gstAmount = withGST ? (priceAfterDiscount * gstRate) / 100 : 0;
   const totalAmount = priceAfterDiscount + gstAmount;
+
+  const convertAmountToWords = (amount: number) => {
+    const [rupees, paise] = amount.toFixed(2).split(".");
+    const rupeeWords = toWords(Number(rupees)).toUpperCase();
+    const paiseWords = toWords(Number(paise)).toUpperCase();
+    return `INR ${rupeeWords} AND ${paiseWords} PAISE ONLY`;
+  };
+
+  const getInvoiceLink = (invoiceNumber: string) => {
+    const domain = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
+    return `${domain}/invoice-view/${invoiceNumber}`;
+  };
 
   const generateInvoiceAndUpdateStock = async () => {
     document.activeElement instanceof HTMLElement &&
@@ -219,6 +234,7 @@ const InvoiceBuilder: React.FC = () => {
         price: item.price,
         totalPrice: item.totalPrice,
         hsn: item.hsn || "",
+        discount: item.discount || 0,
       }));
 
     try {
@@ -237,6 +253,7 @@ const InvoiceBuilder: React.FC = () => {
           discountPercent,
           discountAmount,
           items: itemsToSave,
+          createdAt: invoiceDate,
           amountPaid,
           withGST, // ✅ Add this line
           gstRate, // ✅ And this
@@ -278,13 +295,18 @@ const InvoiceBuilder: React.FC = () => {
             customerGST,
             customerPhone,
             customerState,
+           
             firm: "devjyoti",
+            invoiceNumber: data.order.invoiceNumber, // ✅ ✅ ✅ ADD THIS LINE
+            createdAt: data.order.createdAt,
             items: editableItems.map((item) => ({
               name: item.name,
               price: item.price,
               quantity: item.quantity,
               totalPrice: item.totalPrice,
               hsn: item.hsn,
+              discount: item.discount || 0,
+
             })),
             totalAmount: totalAmount,
             withGST,
@@ -468,675 +490,690 @@ const InvoiceBuilder: React.FC = () => {
             </div>
           )}
 
-          {
-            !withGST && (
+          {!withGST && (
+            <div className="mt-4 mb-6 border border-black pt-2">
+              <h3 className="font-bold pb-2 mb-2">Buyer (Bill To)</h3>
+              <div className="grid grid-cols-1 gap-2">
+                <p>
+                  <strong>Name:</strong>{" "}
+                  {isGeneratingPDF ? (
+                    <span>{customerName || "N/A"}</span>
+                  ) : (
+                    <input
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+                    />
+                  )}
+                </p>
+                <p className="flex items-center gap-2">
+                  <strong>Phone:</strong>{" "}
+                  {isGeneratingPDF ? (
+                    <span>{customerPhone || "N/A"}</span>
+                  ) : (
+                    <>
+                      <input
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+                      />
+                      <button
+                        onClick={async () => {
+                          if (!customerPhone || customerPhone.length < 4) {
+                            alert("Please enter valid phone number.");
+                            return;
+                          }
 
-              <div className="mt-4 border-t pt-2">
-      <h3 className="font-bold pb-1 mb-2">Buyer (Bill To)</h3>
-      <div className="grid grid-cols-1 gap-2">
-        <p>
-          <strong>Name:</strong>{" "}
-          {isGeneratingPDF ? (
-            <span>{customerName || "N/A"}</span>
-          ) : (
-            <input
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
-            />
+                          try {
+                            const token = localStorage.getItem("token");
+                            const res = await fetch(
+                              `${BASE_URL}/orders/pending?phone=${customerPhone}`,
+                              {
+                                headers: {
+                                  Authorization: `Bearer ${token}`,
+                                },
+                              }
+                            );
+                            const data = await res.json();
+                            setPreviousPending(data?.pendingAmount || 0);
+                          } catch (err) {
+                            setPreviousPending(0);
+                          }
+                        }}
+                        className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600 print:hidden"
+                      >
+                        🔍
+                      </button>
+                    </>
+                  )}
+                </p>
+                <p>
+                  <strong>Address:</strong>{" "}
+                  {isGeneratingPDF ? (
+                    <span>{customerAddress || "N/A"}</span>
+                  ) : (
+                    <input
+                      value={customerAddress}
+                      onChange={(e) => setCustomerAddress(e.target.value)}
+                      className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+                    />
+                  )}
+                </p>
+                <p>
+                  <strong>GSTIN:</strong>{" "}
+                  {isGeneratingPDF ? (
+                    <span>{customerGST || "N/A"}</span>
+                  ) : (
+                    <input
+                      value={customerGST}
+                      onChange={(e) => setCustomerGST(e.target.value)}
+                      className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+                    />
+                  )}
+                </p>
+                <p>
+                  <strong>State:</strong>{" "}
+                  {isGeneratingPDF ? (
+                    <span>{customerState || "N/A"}</span>
+                  ) : (
+                    <input
+                      value={customerState}
+                      onChange={(e) => setCustomerState(e.target.value)}
+                      className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+                    />
+                  )}
+                </p>
+              </div>
+            </div>
           )}
-        </p>
-        <p className="flex items-center gap-2">
-          <strong>Phone:</strong>{" "}
-          {isGeneratingPDF ? (
-            <span>{customerPhone || "N/A"}</span>
-          ) : (
+
+          {withGST && (
             <>
-              <input
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
-              />
-              <button
-                onClick={async () => {
-                  if (!customerPhone || customerPhone.length < 4) {
-                    alert("Please enter valid phone number.");
-                    return;
-                  }
+              <div className="border border-black  flex">
+                <div className="w-[70%] border-r border-black p-4 text-sm min-h-[340px] flex flex-col justify-between">
+                 
+                  <div>
+                    <h1 className="text-2xl font-bold"> DEV JYOTI TEXTILES</h1>
+                    <p className=" text-base">
+                      SHORI CLOTH MARKET ,ROHTAK -1224001
+                    </p>
+                    <p className="text-base ">GSTIN/UIN: 06BSSPJ8369N1ZN</p>
+                    <p className="text-base ">Mobile:9812183950</p>
+                    <p className=" text-base ">
+                      State Name: HARYANA
+                    </p>
+                  </div>
 
-                  try {
-                    const token = localStorage.getItem("token");
-                    const res = await fetch(
-                      `${BASE_URL}/orders/pending?phone=${customerPhone}`,
-                      {
-                        headers: {
-                          Authorization: `Bearer ${token}`,
-                        },
-                      }
-                    );
-                    const data = await res.json();
-                    setPreviousPending(data?.pendingAmount || 0);
-                  } catch (err) {
-                    setPreviousPending(0);
-                  }
-                }}
-                className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600 print:hidden"
-              >
-                🔍
-              </button>
-            </>
-          )}
-        </p>
-        <p>
-          <strong>Address:</strong>{" "}
-          {isGeneratingPDF ? (
-            <span>{customerAddress || "N/A"}</span>
-          ) : (
-            <input
-              value={customerAddress}
-              onChange={(e) => setCustomerAddress(e.target.value)}
-              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
-            />
-          )}
-        </p>
-        <p>
-          <strong>GSTIN:</strong>{" "}
-          {isGeneratingPDF ? (
-            <span>{customerGST || "N/A"}</span>
-          ) : (
-            <input
-              value={customerGST}
-              onChange={(e) => setCustomerGST(e.target.value)}
-              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
-            />
-          )}
-        </p>
-        <p>
-          <strong>State:</strong>{" "}
-          {isGeneratingPDF ? (
-            <span>{customerState || "N/A"}</span>
-          ) : (
-            <input
-              value={customerState}
-              onChange={(e) => setCustomerState(e.target.value)}
-              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
-            />
-          )}
-        </p>
-      </div>
-    </div>
-            )
-          }
+                  {/* CONSIGNEE */}
+                  <div className="mt-4  border-black border-t pt-2">
+                    <div className="flex justify-between items-center print:hidden">
+                      <h3 className=" text-base font-medium">
+                        CONSIGNEE (SHIP TO)
+                      </h3>
+                      {!isGeneratingPDF && (
+                        <div className="flex items-center gap-2">
+                          <select
+                            className="border px-2 py-1 text-sm"
+                            onChange={(e) => {
+                              const selected = consignees.find(
+                                (c) => c._id === e.target.value
+                              );
+                              setSelectedConsignee(selected);
+                            }}
+                          >
+                            <option value="">Select Consignee</option>
+                            {consignees.map((c) => (
+                              <option key={c._id} value={c._id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            className="bg-green-500 text-white px-2 py-1 text-sm rounded hover:bg-green-600"
+                            onClick={() => {
+                              setAddingNew(true);
+                              setEditingId(null);
+                              setNewConsignee({
+                                name: "",
+                                address: "",
+                                gstin: "",
+                                pan: "",
+                                state: "",
+                              });
+                            }}
+                          >
+                            ➕
+                          </button>
+                        </div>
+                      )}
+                    </div>
 
-
-          
-
-{
-  withGST && (
-<>
-<div className="flex justify-between items-start gap-4 pb-4">
-  {/* ✅ LEFT SIDE: Firm Info + Consignee + Buyer */}
-  <div className="w-[60%] border border-black p-4 text-sm rounded-md min-h-[340px] flex flex-col justify-between">
-    {/* Firm Details */}
-    <div>
-      <h1 className="text-2xl font-bold">DEV JYOTI TEXTILES</h1>
-      <p className="mt-1">Shori Cloth Market, Rohtak - 124001</p>
-      <p className="text-red-600 font-semibold mt-1">
-        GSTIN/UIN: 06BSSPJ8369N1ZN | Mobile: 9812183950
-      </p>
-      <p className="font-semibold mt-1">State Name: HARYANA 124001</p>
-    </div>
-
-    {/* Consignee */}
-    <div className="mt-4 border-t pt-2">
-      <div className="flex justify-between items-center print:hidden">
-        <h3 className="font-semibold">CONSIGNEE (SHIP TO)</h3>
-        {!isGeneratingPDF && (
-          <div className="flex items-center gap-2">
-            <select
-              className="border px-2 py-1 text-sm"
-              onChange={(e) => {
-                const selected = consignees.find(
-                  (c) => c._id === e.target.value
-                );
-                setSelectedConsignee(selected);
-              }}
-            >
-              <option value="">Select Consignee</option>
-              {consignees.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <button
-              className="bg-green-500 text-white px-2 py-1 text-sm rounded hover:bg-green-600"
-              onClick={() => {
-                setAddingNew(true);
-                setEditingId(null);
-                setNewConsignee({
-                  name: "",
-                  address: "",
-                  gstin: "",
-                  pan: "",
-                  state: "",
-                });
-              }}
-            >
-              ➕
-            </button>
-          </div>
-        )}
-      </div>
-
-      {selectedConsignee && !addingNew && (
-        <div className="text-sm mt-2 space-y-[2px]">
-          <p>
-            <strong>{selectedConsignee.name}</strong>
-          </p>
-          <p>{selectedConsignee.address}</p>
-          <p>GSTIN/UIN: {selectedConsignee.gstin}</p>
-          <p>PAN/IT No: {selectedConsignee.pan}</p>
-          <p>State Name: {selectedConsignee.state}</p>
-          {!isGeneratingPDF && (
-            <div className="flex gap-2 mt-1 print:hidden">
-              <button
-                className="text-blue-600 text-sm"
+                    {selectedConsignee && !addingNew && (
+                      <div className="text-sm mt-0 space-y-[2px]">
+                        <p>
+                          <strong className="text-lg">
+                            {selectedConsignee.name}
+                          </strong>
+                        </p>
+                        <p className="text-base">{selectedConsignee.address}</p>
+                        <p className="text-base">
+                          GSTIN/UIN: {selectedConsignee.gstin}
+                        </p>
+                        <p className="text-base">
+                          PAN/IT No: {selectedConsignee.pan}
+                        </p>
+                        <p className="text-base">
+                          State Name: {selectedConsignee.state}
+                        </p>
+                        {!isGeneratingPDF && (
+                          <div className="flex gap-2 mt-0 print:hidden">
+                            {/* <button className="text-blue-600 text-sm"
                 onClick={() => {
                   setEditingId(selectedConsignee._id);
                   setNewConsignee({ ...selectedConsignee });
                   setAddingNew(true);
                 }}
-              >
-                ✏️
-              </button>
-              <button
-                className="text-red-600 text-sm"
-                onClick={() =>
-                  handleDeleteConsignee(selectedConsignee._id)
-                }
-              >
-                ❌
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      {addingNew && (
-        <div className="mt-3 space-y-2 print:hidden">
-          {["name", "address", "gstin", "pan", "state"].map((field) => (
-            <input
-              key={field}
-              className="w-full border px-3 py-1 text-sm rounded"
-              placeholder={`Enter ${field}`}
-              value={newConsignee[field]}
-              onChange={(e) =>
-                setNewConsignee({
-                  ...newConsignee,
-                  [field]: e.target.value,
-                })
-              }
-            />
-          ))}
-          <div className="flex gap-2">
-            <button
-              className="bg-blue-500 text-white px-4 py-1 rounded"
-              onClick={handleSaveConsignee}
-            >
-              ✅ Save
-            </button>
-            <button
-              className="bg-gray-400 text-white px-4 py-1 rounded"
-              onClick={() => {
-                setAddingNew(false);
-                setEditingId(null);
-                setNewConsignee({
-                  name: "",
-                  address: "",
-                  gstin: "",
-                  pan: "",
-                  state: "",
-                });
-              }}
-            >
-              ❌ Cancel
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-
-    {/* Buyer Info */}
-    <div className="mt-4 border-t pt-2">
-      <h3 className="font-bold pb-1 mb-2">Buyer (Bill To)</h3>
-      <div className="grid grid-cols-1 gap-2">
-        <p>
-          <strong>Name:</strong>{" "}
-          {isGeneratingPDF ? (
-            <span>{customerName || "N/A"}</span>
-          ) : (
-            <input
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
-            />
-          )}
-        </p>
-        <p className="flex items-center gap-2">
-          <strong>Phone:</strong>{" "}
-          {isGeneratingPDF ? (
-            <span>{customerPhone || "N/A"}</span>
-          ) : (
-            <>
-              <input
-                value={customerPhone}
-                onChange={(e) => setCustomerPhone(e.target.value)}
-                className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
-              />
-              <button
-                onClick={async () => {
-                  if (!customerPhone || customerPhone.length < 4) {
-                    alert("Please enter valid phone number.");
-                    return;
-                  }
-
-                  try {
-                    const token = localStorage.getItem("token");
-                    const res = await fetch(
-                      `${BASE_URL}/orders/pending?phone=${customerPhone}`,
-                      {
-                        headers: {
-                          Authorization: `Bearer ${token}`,
-                        },
-                      }
-                    );
-                    const data = await res.json();
-                    setPreviousPending(data?.pendingAmount || 0);
-                  } catch (err) {
-                    setPreviousPending(0);
-                  }
-                }}
-                className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600 print:hidden"
-              >
-                🔍
-              </button>
-            </>
-          )}
-        </p>
-        <p>
-          <strong>Address:</strong>{" "}
-          {isGeneratingPDF ? (
-            <span>{customerAddress || "N/A"}</span>
-          ) : (
-            <input
-              value={customerAddress}
-              onChange={(e) => setCustomerAddress(e.target.value)}
-              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
-            />
-          )}
-        </p>
-        <p>
-          <strong>GSTIN:</strong>{" "}
-          {isGeneratingPDF ? (
-            <span>{customerGST || "N/A"}</span>
-          ) : (
-            <input
-              value={customerGST}
-              onChange={(e) => setCustomerGST(e.target.value)}
-              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
-            />
-          )}
-        </p>
-        <p>
-          <strong>State:</strong>{" "}
-          {isGeneratingPDF ? (
-            <span>{customerState || "N/A"}</span>
-          ) : (
-            <input
-              value={customerState}
-              onChange={(e) => setCustomerState(e.target.value)}
-              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
-            />
-          )}
-        </p>
-      </div>
-    </div>
-  </div>
-
-  {/* ✅ RIGHT SIDE: QR + Invoice Table */}
-  <div className="w-[40%] border border-black p-4 rounded-md text-xs font-medium min-h-[480px] flex flex-col items-end text-right">
-    <div className="w-full flex justify-end">
-      <QRCode value={window.location.href} size={140} />
-    </div>
-    <table className="w-full mt-1 border border-black text-[11px]">
-      <tbody>
-        <tr>
-          <td className="border px-2 py-3 font-semibold w-[40%]">Invoice No</td>
-          <td className="border px-2 py-1 text-right">
-            {orderData?.invoiceNumber || "N/A"}
-          </td>
-        </tr>
-        <tr>
-          <td className="border px-2 py-3 font-semibold">Dated</td>
-          <td className="border px-2 py-1 text-right">
-            {moment(orderData?.createdAt).format("DD MMM, YYYY")}
-          </td>
-        </tr>
-        <tr>
-          <td className="border px-2 py-3 font-semibold">Delivery Note</td>
-          <td className="border px-2 py-1 text-right">_</td>
-        </tr>
-        <tr>
-          <td className="border px-2 py-3 font-semibold">
-            Reference No. & Date
-          </td>
-          <td className="border px-2 py-1 text-right">Other References</td>
-        </tr>
-        <tr>
-          <td className="border px-2 py-3 font-semibold">Dispatch Doc No.</td>
-          <td className="border px-2 py-1 text-right">Delivery Note Date</td>
-        </tr>
-        <tr>
-          <td className="border px-2 py-3 font-semibold">
-            Dispatched through
-          </td>
-          <td className="border px-2 py-1 text-right">Destination</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-</>
-
-  )
-}
-
-
-          {/* PRODUCT TABLE */}
-          <table className="w-full border mt-4 text-sm">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border py-1">Sr.</th>
-                <th className="border py-1">Item</th>
-                <th className="border py-1">HSN</th>
-                <th className="border py-1">Qty</th>
-                <th className="border py-1">Price</th>
-                <th className="border py-1">Amount</th>
-                {!isGeneratingPDF && (
-                  <th className="border py-1 action-header">Action</th>
-                )}
-              </tr>
-            </thead>
-            <tbody>
-              {editableItems.map((item, index) => (
-                <tr key={index}>
-                  <td className="border text-center py-1">{index + 1}</td>
-                  <td className="border text-center py-1">
-                    {isGeneratingPDF ? (
-                      <div className="text-xs">{item.name}</div>
-                    ) : (
-                      <div className="relative">
-                        <input
-                          className="w-full text-xs px-2 py-1 border rounded-sm bg-white"
-                          value={item.name}
-                          onChange={(e) =>
-                            handleProductNameChange(index, e.target.value)
-                          }
-                        />
-                        {/* Dropdown */}
-                        {productSuggestions.length > 0 &&
-                          index === editableItems.length - 1 && (
-                            <ul className="absolute top-full left-0 mt-1 bg-white border w-full shadow z-50 max-h-40 overflow-y-auto text-left">
-                              {productSuggestions.map((prod, i) => (
-                                <li
-                                  key={i}
-                                  className="px-2 py-1 text-xs hover:bg-gray-100 cursor-pointer"
-                                  onClick={() =>
-                                    handleSuggestionSelect(index, prod)
-                                  }
-                                >
-                                  {prod.productName} - ₹{prod.price}
-                                </li>
-                              ))}
-                            </ul>
-                          )}
+              >✏️</button> */}
+                            <button
+                              className="text-red-600 text-sm"
+                              onClick={() =>
+                                handleDeleteConsignee(selectedConsignee._id)
+                              }
+                            >
+                              ❌
+                            </button>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </td>
 
-                  <td className="border text-center py-1">
-                    {isGeneratingPDF ? (
-                      <div className="text-xs">{item.hsn}</div>
-                    ) : (
-                      <input
-                        type="text"
-                        className="w-20 text-xs px-2 py-1 border rounded-sm"
-                        value={item.hsn}
-                        onChange={(e) => {
-                          const updatedItems = [...editableItems];
-                          updatedItems[index].hsn = e.target.value;
-                          setEditableItems(updatedItems);
-                        }}
-                      />
-                    )}
-                  </td>
-
-                  <td className="border text-center py-1">
-                    {isGeneratingPDF ? (
-                      <div className="text-xs">{item.quantity}</div>
-                    ) : (
-                      <input
-                        type="number"
-                        className="w-16 text-xs px-2 py-1 border rounded-sm"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          handleValueChange(
-                            index,
-                            "quantity",
-                            Number(e.target.value)
+                    {addingNew && (
+                      <div className="mt-3 space-y-2 print:hidden">
+                        {["name", "address", "gstin", "pan", "state"].map(
+                          (field) => (
+                            <input
+                              key={field}
+                              className="w-full border px-3 py-1 text-sm rounded"
+                              placeholder={`Enter ${field}`}
+                              value={newConsignee[field]}
+                              onChange={(e) =>
+                                setNewConsignee({
+                                  ...newConsignee,
+                                  [field]: e.target.value,
+                                })
+                              }
+                            />
                           )
-                        }
-                      />
+                        )}
+                        <div className="flex gap-2">
+                          <button
+                            className="bg-blue-500 text-white px-4 py-1 rounded"
+                            onClick={handleSaveConsignee}
+                          >
+                            ✅ Save
+                          </button>
+                          <button
+                            className="bg-gray-400 text-white px-4 py-1 rounded"
+                            onClick={() => {
+                              setAddingNew(false);
+                              setEditingId(null);
+                              setNewConsignee({
+                                name: "",
+                                address: "",
+                                gstin: "",
+                                pan: "",
+                                state: "",
+                              });
+                            }}
+                          >
+                            ❌ Cancel
+                          </button>
+                        </div>
+                      </div>
                     )}
-                  </td>
+                  </div>
 
-                  <td className="border text-center py-1">
-                    {isGeneratingPDF ? (
-                      <div className="text-xs">₹{item.price}</div>
-                    ) : (
-                      <input
-                        type="number"
-                        className="w-20 text-xs px-2 py-1 border rounded-sm"
-                        value={item.price}
-                        onChange={(e) =>
-                          handleValueChange(
-                            index,
-                            "price",
-                            Number(e.target.value)
-                          )
-                        }
-                      />
-                    )}
-                  </td>
+                  {/* BUYER (BILL TO) */}
+                  <div className="mt-4  border-black border-t pt-2">
+                    <h3 className="font-medium text-base pb-1 mb-2">
+                      Buyer (Bill To)
+                    </h3>
+                    <div className="grid grid-cols-1 gap-2">
+                      <p>
+                        <strong>Name:</strong>{" "}
+                        {isGeneratingPDF ? (
+                          <span>{customerName || "N/A"}</span>
+                        ) : (
+                          <input
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+                          />
+                        )}
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <strong>Phone:</strong>{" "}
+                        {isGeneratingPDF ? (
+                          <span>{customerPhone || "N/A"}</span>
+                        ) : (
+                          <>
+                            <input
+                              value={customerPhone}
+                              onChange={(e) => setCustomerPhone(e.target.value)}
+                              className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+                            />
+                            <button
+                              onClick={async () => {
+                                if (
+                                  !customerPhone ||
+                                  customerPhone.length < 4
+                                ) {
+                                  alert("Please enter valid phone number.");
+                                  return;
+                                }
+                                try {
+                                  const token = localStorage.getItem("token");
+                                  const res = await fetch(
+                                    `${BASE_URL}/orders/pending?phone=${customerPhone}`,
+                                    {
+                                      headers: {
+                                        Authorization: `Bearer ${token}`,
+                                      },
+                                    }
+                                  );
+                                  const data = await res.json();
+                                  setPreviousPending(data?.pendingAmount || 0);
+                                } catch (err) {
+                                  setPreviousPending(0);
+                                }
+                              }}
+                              className="bg-blue-500 text-white px-2 py-1 text-sm rounded hover:bg-blue-600 print:hidden"
+                            >
+                              🔍
+                            </button>
+                          </>
+                        )}
+                      </p>
+                      <p>
+                        <strong>Address:</strong>{" "}
+                        {isGeneratingPDF ? (
+                          <span>{customerAddress || "N/A"}</span>
+                        ) : (
+                          <input
+                            value={customerAddress}
+                            onChange={(e) => setCustomerAddress(e.target.value)}
+                            className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+                          />
+                        )}
+                      </p>
+                      <p>
+                        <strong>GSTIN:</strong>{" "}
+                        {isGeneratingPDF ? (
+                          <span>{customerGST || "N/A"}</span>
+                        ) : (
+                          <input
+                            value={customerGST}
+                            onChange={(e) => setCustomerGST(e.target.value)}
+                            className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+                          />
+                        )}
+                      </p>
+                      <p>
+                        <strong>State:</strong>{" "}
+                        {isGeneratingPDF ? (
+                          <span>{customerState || "N/A"}</span>
+                        ) : (
+                          <input
+                            value={customerState}
+                            onChange={(e) => setCustomerState(e.target.value)}
+                            className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+                          />
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
-                  <td className="border text-center py-1 font-semibold">
-                    ₹{item.totalPrice.toFixed(2)}
-                  </td>
-                  {!isGeneratingPDF && (
-                    <td className="border text-center py-1 action-cell">
-                      <button
-                        onClick={() => deleteRow(index)}
-                        className="text-red-500 text-xs"
-                      >
-                        ❌
-                      </button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                {/* ✅ RIGHT SIDE: QR + Invoice Table */}
+                <div className="w-[34%] p-4 text-xs font-medium min-h-[480px] flex flex-col items-end text-right">
+                  <div className="w-full flex justify-end mb-3">
+                    <QRCode
+                      value={`https://djtextile.in/invoice-view/${orderData?.invoiceNumber}`}
+                      size={140}
+                    />
+                  </div>
+                  <table className="w-[100%]  border border-black text-[13px] ">
+                    <tbody>
+                      <tr>
+                        <td className="border px-2 py-3 font-semibold w-[40%]  text-left">
+                          Invoice No
+                        </td>
+                        <td className="border px-2 py-1 text-right">
+                          {orderData?.invoiceNumber || "N/A"}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border px-2 py-3 font-semibold text-left">
+                          Dated
+                        </td>
+                        <td className="border px-2 py-1 text-right">
+                          {!isGeneratingPDF ? (
+                            <input
+                              type="date"
+                              className="border px-2 py-1 text-sm"
+                              value={moment(invoiceDate).format("YYYY-MM-DD")}
+                              onChange={(e) =>
+                                setInvoiceDate(new Date(e.target.value))
+                              }
+                            />
+                          ) : (
+                            moment(invoiceDate).format("DD MMM, YYYY")
+                          )}
+                        </td>
+                      </tr>
 
-          {/* TOTAL SECTION */}
-          {!isGeneratingPDF && (
-            <div className="flex justify-end mt-4">
-              <div className="text-sm flex items-center gap-2">
-                <label htmlFor="discount" className="font-medium">
-                  Apply Discount (%):
-                </label>
-                <select
-                  id="discount"
-                  value={discountPercent}
-                  onChange={(e) => setDiscountPercent(Number(e.target.value))}
-                  className="border px-2 py-1 rounded"
-                >
-                  <option value={0}>None</option>
-                  <option value={1}>1%</option>
-                  <option value={2}>2%</option>
-                  <option value={3}>3%</option>
-                  <option value={4}>4%</option>
-                  <option value={5}>5%</option>
-                </select>
+                      <tr>
+                        <td className="border px-2 py-3 font-semibold  text-left">
+                          Delivery Note
+                        </td>
+                        <td className="border px-2 py-1 text-right ">_</td>
+                      </tr>
+                      <tr>
+                        <td className="border px-2 py-3 font-semibold  text-left">
+                          Reference No. & Date
+                        </td>
+                        <td className="border px-2 py-1 text-right ">
+                          Other References
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border px-2 py-3 font-semibold text-left">
+                          Dispatch Doc No.
+                        </td>
+                        <td className="border px-2 py-1 text-right ">
+                          Delivery Note Date
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="border px-2 py-3 font-semibold  text-left">
+                          Dispatched through
+                        </td>
+                        <td className="border px-2 py-1 text-right">
+                          Destination
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+            </>
           )}
 
-          {/* ✅ GST + Discount + Final Total */}
-          <div className="mt-2 font-semibold text-sm w-full flex justify-end">
-            <div className="border border-black p-2 w-full md:w-[350px] text-xs">
-              <div className="grid grid-cols-2 gap-[2px]">
-                {/* Gross */}
-                <div className="border border-gray-400 px-2 py-1">Gross</div>
-                <div className="border border-gray-400 px-2 py-1 text-right">
-                  ₹{finalPrice.toFixed(2)}
-                </div>
+          <div className="border border-black  p-4">
+            <table className="w-full border mt-4 text-sm">
+              <thead className="bg-gray-100">
+                <tr>
+                  <th className="border py-1">Sr.</th>
+                  <th className="border py-1">Description of Goods </th>
+                  <th className="border py-1">HSN/SAC </th>
+                  <th className="border py-1">Quantity </th>
+                  <th className="border py-1">Rate</th>
+                  <th className="border py-1">Discount</th>
 
-                {/* Discount (only if applied) */}
-                {discountPercent > 0 && (
-                  <>
-                    <div className="border border-gray-400 px-2 py-1">
-                      Discount @{discountPercent}%
-                    </div>
-                    <div className="border border-gray-400 px-2 py-1 text-right">
-                      – ₹{discountAmount.toFixed(2)}
-                    </div>
-                  </>
-                )}
+                  <th className="border py-1">Amount</th>
+                  {!isGeneratingPDF && (
+                    <th className="border py-1 action-header">Action</th>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {editableItems
+                  .filter((item) => item.name.trim() !== "" || !isGeneratingPDF) // ❌ skip blank rows in print
+                  .map((item, index) => (
+                    <tr key={index}>
+                      <td className="border text-center py-1">{index + 1}</td>
+                      <td className="border text-center py-1">
+                        {isGeneratingPDF ? (
+                          <div className="text-xs">{item.name}</div>
+                        ) : (
+                          <div className="relative">
+                            <input
+                              className="w-full text-xs px-2 py-1 border rounded-sm bg-white"
+                              value={item.name}
+                              onChange={(e) =>
+                                handleProductNameChange(index, e.target.value)
+                              }
+                            />
+                            {/* Dropdown */}
+                            {productSuggestions.length > 0 &&
+                              index === editableItems.length - 1 && (
+                                <ul className="absolute top-full left-0 mt-1 bg-white border w-full shadow z-50 max-h-40 overflow-y-auto text-left">
+                                  {productSuggestions.map((prod, i) => (
+                                    <li
+                                      key={i}
+                                      className="px-2 py-1 text-xs hover:bg-gray-100 cursor-pointer"
+                                      onClick={() =>
+                                        handleSuggestionSelect(index, prod)
+                                      }
+                                    >
+                                      {prod.productName} - ₹{prod.price}
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                          </div>
+                        )}
+                      </td>
 
-                {/* GST (if applicable) */}
-                {withGST && (
-                  <>
-                    <div className="border border-gray-400 px-2 py-1">
-                      CGST @{gstRate / 2}%
+                      <td className="border text-center py-1">5155</td>
+
+                      <td className="border text-center py-1">
+                        {isGeneratingPDF ? (
+                          <div className="text-xs">{item.quantity}</div>
+                        ) : (
+                          <input
+                            type="number"
+                            className="w-16 text-xs px-2 py-1 border rounded-sm"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              handleValueChange(
+                                index,
+                                "quantity",
+                                Number(e.target.value)
+                              )
+                            }
+                          />
+                        )}
+                      </td>
+
+                      <td className="border text-center py-1">
+                        {isGeneratingPDF ? (
+                          <div className="text-xs">₹{item.price}</div>
+                        ) : (
+                          <input
+                            type="number"
+                            className="w-20 text-xs px-2 py-1 border rounded-sm"
+                            value={item.price}
+                            onChange={(e) =>
+                              handleValueChange(
+                                index,
+                                "price",
+                                Number(e.target.value)
+                              )
+                            }
+                          />
+                        )}
+                      </td>
+                      <td className="border text-center py-1">
+                        {isGeneratingPDF ? (
+                          <div className="text-xs">
+                            {item.discount ? `${item.discount}%` : "—"}
+                          </div>
+                        ) : (
+                          <select
+                            className="text-xs border px-1 py-0"
+                            value={item.discount || 0}
+                            onChange={(e) => {
+                              const updatedItems = [...editableItems];
+                              const discount = Number(e.target.value);
+                              updatedItems[index].discount = discount;
+                              const discountedPrice =
+                                updatedItems[index].price -
+                                (updatedItems[index].price * discount) / 100;
+                              updatedItems[index].totalPrice =
+                                discountedPrice * updatedItems[index].quantity;
+                              setEditableItems(updatedItems);
+                            }}
+                          >
+                            <option value={0}>0%</option>
+                            <option value={1}>1%</option>
+                            <option value={2}>2%</option>
+                            <option value={3}>3%</option>
+                            <option value={4}>4%</option>
+                            <option value={5}>5%</option>
+                          </select>
+                        )}
+                      </td>
+
+                      <td className="border text-center py-1 font-semibold">
+                        ₹{item.totalPrice.toFixed(2)}
+                      </td>
+                      {!isGeneratingPDF && (
+                        <td className="border text-center py-1 action-cell">
+                          <button
+                            onClick={() => deleteRow(index)}
+                            className="text-red-500 text-xs"
+                          >
+                            ❌
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+
+            {/* ✅ GST + Discount + Final Total WITH Amount in Words SIDE-BY-SIDE */}
+            <div className="w-full flex justify-between mt-2">
+              {/* LEFT SIDE – Amount in Words */}
+              <div className="w-[62%] mt-3 border border-black p-2 italic text-sm font-semibold">
+                Amount Chargeable (In Words):{" "}
+                <strong>
+                  {toWords(Math.round(totalAmount)).toUpperCase()} ONLY
+                </strong>
+              </div>
+
+              {/* RIGHT SIDE – Gross / Discount / CGST / SGST / Total */}
+              <div className="  mt-1 text-sm w-[38%]">
+                <div className="p-2 text-xs ">
+                  <div className="grid grid-cols-2 gap-[1px]">
+                    {/* Gross */}
+                    <div className="border border-gray-400 font-bold px-1 py-[3px]">
+                      Gross
                     </div>
-                    <div className="border border-gray-400 px-2 py-1 text-right">
-                      ₹{(gstAmount / 2).toFixed(2)}
+                    <div className="border border-gray-400 font-bold px-2 py-1 text-right">
+                      ₹{finalPrice.toFixed(2)}
                     </div>
 
-                    <div className="border border-gray-400 px-2 py-1">
-                      SGST @{gstRate / 2}%
-                    </div>
-                    <div className="border border-gray-400 px-2 py-1 text-right">
-                      ₹{(gstAmount / 2).toFixed(2)}
-                    </div>
-                  </>
-                )}
+               
 
-                {/* Final Total */}
-                <div className="border border-gray-400 px-2 py-1 font-bold">
-                  Total
-                </div>
-                <div className="border border-gray-400 px-2 py-1 text-right font-bold">
-                  ₹{totalAmount.toFixed(2)}
+                    {/* GST */}
+                    {withGST && (
+                      <>
+                        <div className="border border-gray-400 px-2 py-1">
+                          CGST @{gstRate / 2}%
+                        </div>
+                        <div className="border border-gray-400 px-2 py-1 text-right">
+                          ₹{(gstAmount / 2).toFixed(2)}
+                        </div>
+
+                        <div className="border border-gray-400 px-2 py-1">
+                          SGST @{gstRate / 2}%
+                        </div>
+                        <div className="border border-gray-400 px-2 py-1 text-right">
+                          ₹{(gstAmount / 2).toFixed(2)}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Final Total */}
+                    <div className="border border-gray-400 px-2 py-1 font-bold">
+                      Total
+                    </div>
+                    <div className="border border-gray-400 px-2 py-1 text-right font-bold">
+                      ₹{totalAmount.toFixed(2)}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-
-
-
-          {/* IN WORDS - separate row below total */}
-          <div className="mt-2 border border-black p-2 italic text-sm font-semibold">
-            In Words:{" "}
-            <strong>
-              {toWords(Math.round(totalAmount)).toUpperCase()} ONLY
-            </strong>
-          </div>
-
-          {/* PAYMENT / DUES SECTION - Clean & Professional */}
-          <div className="mt-4 font-semibold text-sm w-full">
-            <div className="border border-black p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Bank Details */}
-              <div className="text-sm">
-                <p>
-                  <strong>Bank Name:</strong> BANDHAN BANK
-                </p>
-                <p>
-                  <strong>Account No:</strong> 10190007096780
-                </p>
-                <p>
-                  <strong>IFSC:</strong> BDBL0001825
-                </p>
+            {/* PAYMENT / DUES SECTION - Clean & Professional */}
+            <div className="w-full flex justify-between mt-4">
+              <div className="mt-2  w-[60%] text-sm  border border-black font-semibold italic">
+                GST Amount (in words):{" "}
+                <span className="font-bold">
+                  {convertAmountToWords(gstAmount)}
+                </span>
               </div>
 
-              {/* Dues Section */}
-              <div className="text-xs">
-                <div className="grid grid-cols-2 gap-[2px]">
-                  <div className="border border-gray-400 px-2 py-1">
+              <div className="text-xs w-fit border border-black">
+                <div className="grid grid-cols-4 grid-rows-2 font-semibold text-xs text-center">
+                  {/* Row 1: Headings */}
+                  <div className="border border-gray-400 px-2 py-[3px] bg-gray-100">
                     Previous Pending
                   </div>
-                  <div className="border border-gray-400 px-2 py-1 text-right">
+                  <div className="border border-gray-400 px-2 py-[3px] bg-gray-100">
+                    Adjust from Previous
+                  </div>
+                  <div className="border border-gray-400 px-2 py-[3px] bg-gray-100">
+                    Amount Paid (₹)
+                  </div>
+                  <div className="border border-gray-400 px-2 py-[3px] bg-gray-100 text-red-600">
+                    Carry Forward
+                  </div>
+
+                  {/* Row 2: Values */}
+                  <div className="border border-gray-400 px-2 py-[3px]">
                     <span
                       contentEditable
                       suppressContentEditableWarning={true}
                       onBlur={(e) =>
                         setPreviousPending(Number(e.currentTarget.innerText))
                       }
-                      className="outline-none focus:outline-none w-full inline-block print:border-none"
+                      className="outline-none focus:outline-none w-full inline-block print:border-none text-right"
                     >
                       {previousPending}
                     </span>
                   </div>
 
-                  <div className="border border-gray-400 px-2 py-1">
-                    Adjust from Previous Pending
-                  </div>
-                  <div className="border border-gray-400 px-2 py-1 text-right">
+                  <div className="border border-gray-400 px-2 py-[3px]">
                     <span
                       contentEditable
                       suppressContentEditableWarning={true}
                       onBlur={(e) =>
                         setOldPendingAdjusted(Number(e.currentTarget.innerText))
                       }
-                      className="outline-none focus:outline-none w-full inline-block print:border-none"
+                      className="outline-none focus:outline-none w-full inline-block print:border-none text-right"
                     >
                       {oldPendingAdjusted}
                     </span>
                   </div>
 
-                  <div className="border border-gray-400 px-2 py-1">
-                    Amount Paid (₹)
-                  </div>
-                  <div className="border border-gray-400 px-2 py-1 text-right">
+                  <div className="border border-gray-400 px-2 py-[3px]">
                     <span
                       contentEditable
                       suppressContentEditableWarning={true}
                       onBlur={(e) =>
                         setAmountPaid(Number(e.currentTarget.innerText))
                       }
-                      className="outline-none focus:outline-none w-full inline-block print:border-none"
+                      className="outline-none focus:outline-none w-full inline-block print:border-none text-right"
                     >
                       {amountPaid}
                     </span>
                   </div>
 
-                  <div className="border border-gray-400 px-2 py-1 font-semibold text-red-600">
-                    Carry Forward
-                  </div>
-                  <div className="border border-gray-400 px-2 py-1 text-right font-semibold text-red-600">
+                  <div className="border border-gray-400 px-2 py-[3px] text-red-600 font-semibold text-right">
                     ₹
                     {(
                       totalAmount +
@@ -1147,24 +1184,43 @@ const InvoiceBuilder: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="mt-4 border border-black p-4 text-sm">
-            <div className="flex justify-between">
-              <div>
-                <p className="font-bold">Terms & Conditions:</p>
-                <p>1. Goods once sold will not be taken back.</p>
-                <p>2. All disputes are subject to Rohtak Jurisdiction.</p>
-                <p>3. E & O.E.</p>
+            <div className="mt-4 border border-black p-4 text-sm">
+              <div className="flex justify-between">
+                {/* LEFT SIDE: Terms */}
+                <div className="w-[30%]">
+                  <p className="font-bold">Terms & Conditions:</p>
+                  <p>1. Goods once sold will not be taken back.</p>
+                  <p>2. All disputes are subject to Rohtak Jurisdiction.</p>
+                  <p>3. E & O.E.</p>
+                </div>
+
+                {/* CENTER: Bank Details */}
+                <div className="text-center w-[40%] leading-[1.5]">
+                  <p className="font-semibold">Bank Details</p>
+                  <p>
+                    <strong>Bank Name:</strong> BANDHAN BANK
+                  </p>
+                  <p>
+                    <strong>Account No:</strong> 10190007096780
+                  </p>
+                  <p>
+                    <strong>IFSC:</strong> BDBL0001825
+                  </p>
+                </div>
+
+                {/* RIGHT SIDE: Signature */}
+                <div className="text-right w-[30%] font-semibold">
+                  <p>for: DEV JYOTI TEXTILES</p>
+                  <p className="mt-6">Auth. Signatory</p>
+                </div>
               </div>
-              <div className="text-right font-semibold">
-                <p>for: DEV JYOTI TEXTILES</p>
-                <p className="mt-6">Auth. Signatory</p>
-              </div>
+
+              {/* Center Bottom Text */}
+              <p className="text-center mt-4 italic text-gray-600">
+                This is a Computer Generated Invoice. Signature Not Required.
+              </p>
             </div>
-            <p className="text-center mt-4 italic text-gray-600">
-              This is a Computer Generated Invoice. Signature Not Required.
-            </p>
           </div>
 
           {/* Print Button */}

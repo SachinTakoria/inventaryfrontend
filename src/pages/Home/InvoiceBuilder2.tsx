@@ -38,6 +38,8 @@ const InvoiceBuilder2: React.FC = () => {
   const [oldPendingAdjusted, setOldPendingAdjusted] = useState(0);
   const [amountPaid, setAmountPaid] = useState(0);
   const [orderData, setOrderData] = useState(null);
+  const [invoiceDate, setInvoiceDate] = useState(new Date()); // NEW STATE
+
   const [discountPercent, setDiscountPercent] = useState(0);
   const [consignees, setConsignees] = useState<any[]>([]);
   const [selectedConsignee, setSelectedConsignee] = useState<any>(null);
@@ -157,9 +159,10 @@ const InvoiceBuilder2: React.FC = () => {
   };
 
   const getBackgroundColor = () => {
-    if (bgColor === "white") return "#ffc0cb";
-    if (bgColor === "yellow") return "#fff9c4";
-    return "#ffffff";
+    if (bgColor === "pink") return "#ffc0cb"; // pink → light pink
+    if (bgColor === "yellow") return "#fff9c4"; // yellow → light yellow
+    if (bgColor === "white") return "#ffffff"; // white → white
+    return "#ffffff"; // fallback
   };
 
   const finalPrice = editableItems.reduce(
@@ -172,26 +175,21 @@ const InvoiceBuilder2: React.FC = () => {
   const gstAmount = withGST ? (priceAfterDiscount * gstRate) / 100 : 0;
   const totalAmount = priceAfterDiscount + gstAmount;
 
-//   const totalGSTAmount = gstAmount; // kyunki gstAmount = CGST + SGST hota hi hai
-// const gstAmountWords = convertAmountToWords(totalGSTAmount);
+  //   const totalGSTAmount = gstAmount; // kyunki gstAmount = CGST + SGST hota hi hai
+  // const gstAmountWords = convertAmountToWords(totalGSTAmount);
 
+  // ✅ move this ABOVE your InvoiceBuilder2 component declaration
+  const convertAmountToWords = (amount: number) => {
+    const [rupees, paise] = amount.toFixed(2).split(".");
+    const rupeeWords = toWords(Number(rupees)).toUpperCase();
+    const paiseWords = toWords(Number(paise)).toUpperCase();
+    return `INR ${rupeeWords} AND ${paiseWords} PAISE ONLY`;
+  };
 
-// ✅ move this ABOVE your InvoiceBuilder2 component declaration
-const convertAmountToWords = (amount: number) => {
-  const [rupees, paise] = amount.toFixed(2).split(".");
-  const rupeeWords = toWords(Number(rupees)).toUpperCase();
-  const paiseWords = toWords(Number(paise)).toUpperCase();
-  return `INR ${rupeeWords} AND ${paiseWords} PAISE ONLY`;
-};
-
-const getInvoiceLink = (invoiceNumber: string) => {
-  const domain = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
-  return `${domain}/invoice-view/${invoiceNumber}`;
-};
-
-
-
-
+  const getInvoiceLink = (invoiceNumber: string) => {
+    const domain = import.meta.env.VITE_FRONTEND_URL || window.location.origin;
+    return `${domain}/invoice-view/${invoiceNumber}`;
+  };
 
   const generateInvoiceAndUpdateStock = async () => {
     document.activeElement instanceof HTMLElement &&
@@ -238,6 +236,7 @@ const getInvoiceLink = (invoiceNumber: string) => {
         price: item.price,
         totalPrice: item.totalPrice,
         hsn: item.hsn || "",
+        discount: item.discount || 0,
       }));
 
     try {
@@ -258,6 +257,8 @@ const getInvoiceLink = (invoiceNumber: string) => {
           withGST, // ✅ Add this line
           gstRate,
           discountPercent,
+          createdAt: invoiceDate, // 🔥 send to backend
+
           discountAmount, // ✅ And this
           totalAmount,
 
@@ -299,6 +300,8 @@ const getInvoiceLink = (invoiceNumber: string) => {
             customerPhone,
             customerState,
             firm: "shreesai",
+            invoiceNumber: data.order.invoiceNumber, // ✅ ✅ ✅ ADD THIS LINE
+            createdAt: data.order.createdAt,
 
             items: editableItems.map((item) => ({
               name: item.name,
@@ -306,6 +309,7 @@ const getInvoiceLink = (invoiceNumber: string) => {
               quantity: item.quantity,
               totalPrice: item.totalPrice,
               hsn: item.hsn,
+              discount: item.discount || 0,
             })),
             totalAmount: totalAmount,
             withGST,
@@ -357,6 +361,7 @@ const getInvoiceLink = (invoiceNumber: string) => {
               price: 0,
               quantity: 1,
               totalPrice: 0,
+              discount: 0,
               hsn: "",
               _id: "",
             },
@@ -708,7 +713,10 @@ const getInvoiceLink = (invoiceNumber: string) => {
             {/* ✅ RIGHT SIDE: QR + Invoice Table */}
             <div className="w-[34%] p-4 text-xs font-medium min-h-[480px] flex flex-col items-end text-right">
               <div className="w-full flex justify-end mb-3">
-                <QRCode  value={`https://djtextile.in/invoice-view/${orderData?.invoiceNumber}`} size={140} />
+                <QRCode
+                  value={`https://djtextile.in/invoice-view/${orderData?.invoiceNumber}`}
+                  size={140}
+                />
               </div>
               <table className="w-[105%]  border border-black text-[13px] ">
                 <tbody>
@@ -721,11 +729,25 @@ const getInvoiceLink = (invoiceNumber: string) => {
                     </td>
                   </tr>
                   <tr>
-                    <td className="border px-2 py-3 font-semibold  text-left">Dated</td>
+                    <td className="border px-2 py-3 font-semibold text-left">
+                      Dated
+                    </td>
                     <td className="border px-2 py-1 text-right">
-                      {moment(orderData?.createdAt).format("DD MMM, YYYY")}
+                      {!isGeneratingPDF ? (
+                        <input
+                          type="date"
+                          className="border px-2 py-1 text-sm"
+                          value={moment(invoiceDate).format("YYYY-MM-DD")}
+                          onChange={(e) =>
+                            setInvoiceDate(new Date(e.target.value))
+                          }
+                        />
+                      ) : (
+                        moment(invoiceDate).format("DD MMM, YYYY")
+                      )}
                     </td>
                   </tr>
+
                   <tr>
                     <td className="border px-2 py-3 font-semibold  text-left">
                       Delivery Note
@@ -758,6 +780,10 @@ const getInvoiceLink = (invoiceNumber: string) => {
               </table>
             </div>
           </div>
+
+
+
+          
           <div className="border border-black  p-4">
             <table className="w-full border mt-4 text-sm">
               <thead className="bg-gray-100">
@@ -913,14 +939,14 @@ const getInvoiceLink = (invoiceNumber: string) => {
               </div>
 
               {/* RIGHT SIDE – Gross / Discount / CGST / SGST / Total */}
-              <div className="font-bold  mt-1 text-sm w-[38%]">
+              <div className="  mt-1 text-sm w-[38%]">
                 <div className="p-2 text-xs ">
                   <div className="grid grid-cols-2 gap-[1px]">
                     {/* Gross */}
-                    <div className="border border-gray-400 px-1 py-[3px]">
+                    <div className="border border-gray-400 font-bold px-1 py-[3px]">
                       Gross
                     </div>
-                    <div className="border border-gray-400 px-2 py-1 text-right">
+                    <div className="border border-gray-400 font-bold px-2 py-1 text-right">
                       ₹{finalPrice.toFixed(2)}
                     </div>
 
@@ -969,81 +995,113 @@ const getInvoiceLink = (invoiceNumber: string) => {
 
             {/* PAYMENT / DUES SECTION - Clean & Professional */}
             <div className="w-full flex justify-between mt-4">
-            <div className="mt-2  w-[55%] text-sm  border border-black font-semibold italic">
-  GST Amount (in words):{" "}
-  <span className="font-bold">
-    {convertAmountToWords(gstAmount)}
-  </span>
-</div>
+              <div className="mt-2  w-[55%] text-sm  border border-black font-semibold italic">
+                GST Amount (in words):{" "}
+                <span className="font-bold">
+                  {convertAmountToWords(gstAmount)}
+                </span>
+              </div>
 
-  <div className="text-xs w-fit border border-black">
-    <div className="grid grid-cols-4 grid-rows-2 font-semibold text-xs text-center">
-      {/* Row 1: Headings */}
-      <div className="border border-gray-400 px-2 py-[3px] bg-gray-100">Previous Pending</div>
-      <div className="border border-gray-400 px-2 py-[3px] bg-gray-100">Adjust from Previous</div>
-      <div className="border border-gray-400 px-2 py-[3px] bg-gray-100">Amount Paid (₹)</div>
-      <div className="border border-gray-400 px-2 py-[3px] bg-gray-100 text-red-600">Carry Forward</div>
+              <div className="text-xs w-fit border border-black">
+                <div className="grid grid-cols-4 grid-rows-2 font-semibold text-xs text-center">
+                  {/* Row 1: Headings */}
+                  <div className="border border-gray-400 px-2 py-[3px] bg-gray-100">
+                    Previous Pending
+                  </div>
+                  <div className="border border-gray-400 px-2 py-[3px] bg-gray-100">
+                    Adjust from Previous
+                  </div>
+                  <div className="border border-gray-400 px-2 py-[3px] bg-gray-100">
+                    Amount Paid (₹)
+                  </div>
+                  <div className="border border-gray-400 px-2 py-[3px] bg-gray-100 text-red-600">
+                    Carry Forward
+                  </div>
 
-      {/* Row 2: Values */}
-      <div className="border border-gray-400 px-2 py-[3px]">
-        <span
-          contentEditable
-          suppressContentEditableWarning={true}
-          onBlur={(e) => setPreviousPending(Number(e.currentTarget.innerText))}
-          className="outline-none focus:outline-none w-full inline-block print:border-none text-right"
-        >
-          {previousPending}
-        </span>
-      </div>
+                  {/* Row 2: Values */}
+                  <div className="border border-gray-400 px-2 py-[3px]">
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning={true}
+                      onBlur={(e) =>
+                        setPreviousPending(Number(e.currentTarget.innerText))
+                      }
+                      className="outline-none focus:outline-none w-full inline-block print:border-none text-right"
+                    >
+                      {previousPending}
+                    </span>
+                  </div>
 
-      <div className="border border-gray-400 px-2 py-[3px]">
-        <span
-          contentEditable
-          suppressContentEditableWarning={true}
-          onBlur={(e) => setOldPendingAdjusted(Number(e.currentTarget.innerText))}
-          className="outline-none focus:outline-none w-full inline-block print:border-none text-right"
-        >
-          {oldPendingAdjusted}
-        </span>
-      </div>
+                  <div className="border border-gray-400 px-2 py-[3px]">
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning={true}
+                      onBlur={(e) =>
+                        setOldPendingAdjusted(Number(e.currentTarget.innerText))
+                      }
+                      className="outline-none focus:outline-none w-full inline-block print:border-none text-right"
+                    >
+                      {oldPendingAdjusted}
+                    </span>
+                  </div>
 
-      <div className="border border-gray-400 px-2 py-[3px]">
-        <span
-          contentEditable
-          suppressContentEditableWarning={true}
-          onBlur={(e) => setAmountPaid(Number(e.currentTarget.innerText))}
-          className="outline-none focus:outline-none w-full inline-block print:border-none text-right"
-        >
-          {amountPaid}
-        </span>
-      </div>
+                  <div className="border border-gray-400 px-2 py-[3px]">
+                    <span
+                      contentEditable
+                      suppressContentEditableWarning={true}
+                      onBlur={(e) =>
+                        setAmountPaid(Number(e.currentTarget.innerText))
+                      }
+                      className="outline-none focus:outline-none w-full inline-block print:border-none text-right"
+                    >
+                      {amountPaid}
+                    </span>
+                  </div>
 
-      <div className="border border-gray-400 px-2 py-[3px] text-red-600 font-semibold text-right">
-        ₹{(
-          totalAmount +
-          previousPending -
-          (amountPaid + oldPendingAdjusted)
-        ).toFixed(2)}
-      </div>
-    </div>
-  </div>
-</div>
-
-
+                  <div className="border border-gray-400 px-2 py-[3px] text-red-600 font-semibold text-right">
+                    ₹
+                    {(
+                      totalAmount +
+                      previousPending -
+                      (amountPaid + oldPendingAdjusted)
+                    ).toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <div className="mt-4 border border-black p-4 text-sm">
               <div className="flex justify-between">
-                <div>
+                {/* LEFT SIDE: Terms */}
+                <div className="w-[30%]">
                   <p className="font-bold">Terms & Conditions:</p>
                   <p>1. Goods once sold will not be taken back.</p>
                   <p>2. All disputes are subject to Rohtak Jurisdiction.</p>
                   <p>3. E & O.E.</p>
                 </div>
-                <div className="text-right font-semibold">
+
+                {/* CENTER: Bank Details */}
+                <div className="text-center w-[40%] leading-[1.5]">
+                  <p className="font-semibold">Bank Details</p>
+                  <p>
+                    <strong>Bank Name:</strong> INDUSLND BANK LTD
+                  </p>
+                  <p>
+                    <strong>Account No:</strong> 201002825718
+                  </p>
+                  <p>
+                    <strong>IFSC:</strong> INDB0000710
+                  </p>
+                </div>
+
+                {/* RIGHT SIDE: Signature */}
+                <div className="text-right w-[30%] font-semibold">
                   <p>for: HIMANSHI TEXTILES</p>
                   <p className="mt-6">Auth. Signatory</p>
                 </div>
               </div>
+
+              {/* Center Bottom Text */}
               <p className="text-center mt-4 italic text-gray-600">
                 This is a Computer Generated Invoice. Signature Not Required.
               </p>
