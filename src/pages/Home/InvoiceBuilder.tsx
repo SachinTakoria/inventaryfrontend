@@ -595,7 +595,7 @@ const InvoiceBuilder: React.FC = () => {
                   <div>
                     <h1 className="text-2xl font-bold"> DEV JYOTI TEXTILES</h1>
                     <p className=" text-base">
-                      SHORI CLOTH MARKET ,ROHTAK -1224001
+                      SHORI CLOTH MARKET ,ROHTAK -124001
                     </p>
                     <p className="text-base ">GSTIN/UIN: 06BSSPJ8369N1ZN</p>
                     <p className="text-base ">Mobile:9812183950</p>

@@ -57,7 +57,8 @@ const InvoiceViewer = ({ invoiceId }: Props) => {
   const totalWithGST = subtotal + gstAmount;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto bg-white border shadow print:bg-white">
+    <div id="printable-invoice" className="p-6 w-full bg-white border shadow print:bg-white">
+
       <h2 className="text-center text-md font-bold border-b border-black pb-2 mb-4">
         {isGST ? "TAX INVOICE" : "ESTIMATED BILL"}
       </h2>
@@ -74,7 +75,8 @@ const InvoiceViewer = ({ invoiceId }: Props) => {
      
      
      <div className="flex justify-between gap-4 mb-4">
-        <div className="w-[100%] text-sm border border-black p-3">
+        <div className="w-full text-sm border border-black px-2 py-1">
+
           <h3 className="font-bold mb-2">Buyer (Bill To)</h3>
           <p><strong>Name:</strong> {invoice.customerName}</p>
           <p><strong>Phone:</strong> {invoice.customerPhone}</p>
@@ -91,12 +93,13 @@ const InvoiceViewer = ({ invoiceId }: Props) => {
         <>
         <div className="flex justify-between items-start  pb-4">
   {/* LEFT SIDE - FIRM + CONSIGNEE + BUYER */}
-  <div className="w-[62%] border border-black p-4 text-sm rounded-md min-h-[340px] flex flex-col justify-between">
+  <div className="w-[62%] border border-black p-4 text-sm  min-h-[320px] flex flex-col justify-between">
     {/* Firm Info */}
     <div>
       <h1 className="text-2xl font-bold">DEV JYOTI TEXTILES</h1>
       <p>GROUND FLOOR, SHOP NO. 1, DTC MARKET, ROHTAK</p>
-      <p className="text-red-600 font-semibold">GSTIN/UIN: 06ABCDE1234F1Z5 | M: 9812345678</p>
+      <p className="text-red-600 font-semibold">GSTIN/UIN: 06ABCDE1234F1Z5 </p>
+      <p className="font-semibold">M: 9812345678</p>
       <p className="font-semibold">State Name: Haryana, Code: 06</p>
     </div>
 
@@ -112,7 +115,7 @@ const InvoiceViewer = ({ invoiceId }: Props) => {
 
     {/* Buyer Info */}
     <div className="mt-4 border-t pt-2">
-      <h3 className="font-bold pb-1 mb-2">Buyer (Bill To)</h3>
+      <h3 className="font-semibold pb-1 ">Buyer (Bill To)</h3>
       <p><strong>Name:</strong> {invoice.customerName || "N/A"}</p>
       <p><strong>Phone:</strong> {invoice.customerPhone || "N/A"}</p>
       <p><strong>Address:</strong> {invoice.customerAddress || "N/A"}</p>
@@ -122,9 +125,10 @@ const InvoiceViewer = ({ invoiceId }: Props) => {
   </div>
 
   {/* RIGHT SIDE - QR + INVOICE INFO */}
-  <div className="w-[40%] border border-black p-4 rounded-md text-xs font-medium min-h-[440px] flex flex-col items-end text-right">
+  <div className="w-[40%] border border-black p-2 text-xs font-medium min-h-[340px] flex flex-col items-end text-right justify-between">
+
     <div className="w-full flex justify-end mb-2">
-      <QRCode value={window.location.href} size={140} />
+      <QRCode value={window.location.href} size={100} />
     </div>
     <table className="w-full mt-1 border border-black text-[11px]">
       <tbody>
@@ -187,12 +191,7 @@ const InvoiceViewer = ({ invoiceId }: Props) => {
           <div className="grid grid-cols-2 gap-[2px]">
             <div className="border border-gray-400 px-2 py-1">Gross</div>
             <div className="border border-gray-400 px-2 py-1 text-right">₹{itemTotal.toFixed(2)}</div>
-            {discount > 0 && (
-              <>
-                <div className="border border-gray-400 px-2 py-1">Discount @{discount}%</div>
-                <div className="border border-gray-400 px-2 py-1 text-right text-red-600">– ₹{discountAmount.toFixed(2)}</div>
-              </>
-            )}
+        
             {isGST && (
               <>
                 <div className="border border-gray-400 px-2 py-1">CGST @{gstRate / 2}%</div>
