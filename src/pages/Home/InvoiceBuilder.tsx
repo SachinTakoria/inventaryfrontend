@@ -20,8 +20,10 @@ type EditableItem = {
 const InvoiceBuilder: React.FC = () => {
   const { toPDF, targetRef } = usePDF();
   const [withGST, setWithGST] = useState(false);
-  const [gstRate, setGstRate] = useState(18);
-  const [bgColor, setBgColor] = useState("pink");
+  const [gstRate, setGstRate] = useState(5);
+
+  const [bgColor, setBgColor] = useState("white");
+
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [customerName, setCustomerName] = useState("");
   const [customerPhone, setCustomerPhone] = useState("");
