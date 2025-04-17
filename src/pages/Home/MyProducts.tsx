@@ -102,9 +102,7 @@ const MyProducts = () => {
               <th className="p-2 text-left">BRAND</th>
               <th className="p-2 text-left">STOCK</th>
               <th className="p-2 text-left">PRICE</th>
-              <th className="p-2 text-left">WAREHOUSE</th>
-              <th className="p-2 text-left">SUPPLIER</th>
-              <th className="p-2 text-left">STATUS</th>
+              
               <th className="p-2 text-center">ACTIONS</th>
             </tr>
           </thead>
@@ -158,26 +156,10 @@ const MyProducts = () => {
                     ) : `₹ ${product.price}`}
                   </td>
 
-                  <td className="p-2">
-                    {editProductId === product._id ? (
-                      <input value={editData.warehouse} onChange={(e) => handleInputChange(e, "warehouse")} className="input" />
-                    ) : product.warehouse}
-                  </td>
+               
 
-                  <td className="p-2">
-                    {editProductId === product._id ? (
-                      <input value={editData.supplier} onChange={(e) => handleInputChange(e, "supplier")} className="input" />
-                    ) : product.supplier}
-                  </td>
+                 
 
-                  <td className="p-2">
-                    {editProductId === product._id ? (
-                      <select value={editData.status} onChange={(e) => handleInputChange(e, "status")} className="input">
-                        <option value="Received">Received</option>
-                        <option value="Pending">Pending</option>
-                      </select>
-                    ) : product.status}
-                  </td>
 
                   <td className="p-2 text-center">
                     {editProductId === product._id ? (

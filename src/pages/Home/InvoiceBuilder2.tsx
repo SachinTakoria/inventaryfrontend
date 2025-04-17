@@ -159,9 +159,10 @@ const InvoiceBuilder2: React.FC = () => {
   };
 
   const getBackgroundColor = () => {
+    if (bgColor === "white") return "#ffffff"; 
     if (bgColor === "pink") return "#ffc0cb"; // pink → light pink
     if (bgColor === "yellow") return "#fff9c4"; // yellow → light yellow
-    if (bgColor === "white") return "#ffffff"; // white → white
+    // white → white
     return "#ffffff"; // fallback
   };
 
@@ -456,9 +457,9 @@ const InvoiceBuilder2: React.FC = () => {
             onChange={(e) => setBgColor(e.target.value)}
             className="border px-2 py-1 text-sm"
           >
-            <option value="pink">Pink</option>
-            <option value="yellow">Yellow</option>
             <option value="white">White</option>
+            <option value="yellow">Yellow</option>
+            <option value="pink">Pink</option>
           </select>
         </div>
 

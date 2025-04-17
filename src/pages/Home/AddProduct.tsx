@@ -6,14 +6,11 @@ const AddProduct = () => {
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("");
   const [brand, setBrand] = useState("");
-  // const [stock, setStock] = useState("");
-  const [warehouse, setWarehouse] = useState("");
-  const [supplier, setSupplier] = useState("");
-  const [status, setStatus] = useState("Received");
+
   const [image, setImage] = useState<FileList | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  // const [receivedStock, setReceivedStock] = useState("");
+  
   const [categories, setCategories] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [newCategory, setNewCategory] = useState("");
@@ -68,12 +65,7 @@ const AddProduct = () => {
     formData.append("price", price.toString());
     formData.append("category", category);
     formData.append("brand", brand);
-    // formData.append("receivedStock", receivedStock.toString());
-
-    // formData.append("stock", stock.toString());
-    formData.append("warehouse", warehouse);
-    formData.append("supplier", supplier);
-    formData.append("status", status);
+    
 
     if (image && image.length > 0) {
       formData.append("images", image[0]);
@@ -90,11 +82,6 @@ const AddProduct = () => {
         setPrice("");
         setCategory("");
         setBrand("");
-        // setReceivedStock("")
-        // setStock("");
-        setWarehouse("");
-        setSupplier("");
-        setStatus("Received");
         setImage(null);
       }
     } catch (error) {
@@ -137,45 +124,13 @@ const AddProduct = () => {
           <input type="text" value={brand} onChange={(e) => setBrand(e.target.value)} className="w-full p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" required />
         </div>
 
-        {/* <div>
-  <label className="block mb-1 text-sm font-medium text-gray-600">Received Stock*</label>
-  <input
-    type="number"
-    value={receivedStock}
-    onChange={(e) => setReceivedStock(e.target.value)}
-    className="w-full p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm"
-    required
-  />
-</div> */}
-
-
-        {/* <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">Stock Quantity*</label>
-          <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} className="w-full p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" required />
-        </div> */}
 
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">Price*</label>
           <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" required />
         </div>
 
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">Warehouse*</label>
-          <input type="text" value={warehouse} onChange={(e) => setWarehouse(e.target.value)} className="w-full p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" required />
-        </div>
-
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">Supplier*</label>
-          <input type="text" value={supplier} onChange={(e) => setSupplier(e.target.value)} className="w-full p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" required />
-        </div>
-
-        <div>
-          <label className="block mb-1 text-sm font-medium text-gray-600">Status*</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full p-2 rounded-md bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm" required>
-            <option value="Received">Received</option>
-            <option value="Pending">Pending</option>
-          </select>
-        </div>
+      
 
         <div>
           <label className="block mb-1 text-sm font-medium text-gray-600">Upload Product Images</label>
