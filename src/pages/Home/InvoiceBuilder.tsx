@@ -13,6 +13,7 @@ type EditableItem = {
   quantity: number;
   totalPrice: number;
   hsn: string;
+  discount?: number;
   _id: string;
 };
 
@@ -29,7 +30,7 @@ const InvoiceBuilder: React.FC = () => {
   const [customerGST, setCustomerGST] = useState("");
   const [customerState, setCustomerState] = useState("");
   const [editableItems, setEditableItems] = useState<EditableItem[]>([
-    { name: "", price: 0, quantity: 1, totalPrice: 0, hsn: "", _id: "" },
+    { name: "", price: 0, quantity: 1, totalPrice: 0, hsn: "", _id: "", discount: 0  },
   ]);
   const [productSuggestions, setProductSuggestions] = useState<any[]>([]);
   const [allProducts, setAllProducts] = useState<any[]>([]);
@@ -137,7 +138,7 @@ const InvoiceBuilder: React.FC = () => {
     if (index === editableItems.length - 1 && updatedItems[index]._id) {
       setEditableItems([
         ...updatedItems,
-        { name: "", price: 0, quantity: 1, totalPrice: 0, hsn: "", _id: "" },
+        { name: "", price: 0, quantity: 1, totalPrice: 0, hsn: "", _id: "", discount:0 }
       ]);
     }
   };
@@ -1195,7 +1196,9 @@ const InvoiceBuilder: React.FC = () => {
                   <p>3. E & O.E.</p>
                 </div>
 
-                {/* CENTER: Bank Details */}
+                
+               { withGST && (
+                  
                 <div className="text-center w-[40%] leading-[1.5]">
                   <p className="font-semibold">Bank Details</p>
                   <p>
@@ -1207,13 +1210,13 @@ const InvoiceBuilder: React.FC = () => {
                   <p>
                     <strong>IFSC:</strong> BDBL0001825
                   </p>
-                </div>
+                </div> )}
 
-                {/* RIGHT SIDE: Signature */}
+             { withGST && (
                 <div className="text-right w-[30%] font-semibold">
                   <p>for: DEV JYOTI TEXTILES</p>
                   <p className="mt-6">Auth. Signatory</p>
-                </div>
+                </div> )}
               </div>
 
               {/* Center Bottom Text */}
