@@ -109,9 +109,9 @@ const Login = () => {
                   Register
                 </Link>
               </p>
-              <Link to="#" className="text-blue-600 hover:underline font-medium">
+              {/* <Link to="#" className="text-blue-600 hover:underline font-medium">
                 Forgot Password?
-              </Link>
+              </Link> */}
             </div>
           </form>
         )}

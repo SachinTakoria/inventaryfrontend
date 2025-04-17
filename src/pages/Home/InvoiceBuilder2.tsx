@@ -178,10 +178,7 @@ const InvoiceBuilder2: React.FC = () => {
   const gstAmount = withGST ? (priceAfterDiscount * gstRate) / 100 : 0;
   const totalAmount = priceAfterDiscount + gstAmount;
 
-  //   const totalGSTAmount = gstAmount; // kyunki gstAmount = CGST + SGST hota hi hai
-  // const gstAmountWords = convertAmountToWords(totalGSTAmount);
 
-  // ✅ move this ABOVE your InvoiceBuilder2 component declaration
   const convertAmountToWords = (amount: number) => {
     const [rupees, paise] = amount.toFixed(2).split(".");
     const rupeeWords = toWords(Number(rupees)).toUpperCase();
