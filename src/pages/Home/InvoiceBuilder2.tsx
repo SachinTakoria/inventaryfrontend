@@ -266,7 +266,7 @@ const InvoiceBuilder2: React.FC = () => {
           consignee: selectedConsignee,
           carryForward:
             totalAmount + previousPending - (amountPaid + oldPendingAdjusted),
-          firm: "shreesai",
+          firm: "himanshi",
         }),
       });
 
@@ -299,7 +299,7 @@ const InvoiceBuilder2: React.FC = () => {
             customerGST,
             customerPhone,
             customerState,
-            firm: "shreesai",
+            firm: "himanshi",
             invoiceNumber: data.order.invoiceNumber, // ✅ ✅ ✅ ADD THIS LINE
             createdAt: data.order.createdAt,
 
@@ -371,6 +371,9 @@ const InvoiceBuilder2: React.FC = () => {
           setCustomerAddress("");
           setCustomerGST("");
           setCustomerState("");
+          setPreviousPending(0);
+          setAmountPaid(0);
+          setOldPendingAdjusted(0);
         }, 500);
       } else {
         alert("❌ Failed to create invoice. Try again.");
@@ -713,10 +716,10 @@ const InvoiceBuilder2: React.FC = () => {
             {/* ✅ RIGHT SIDE: QR + Invoice Table */}
             <div className="w-[34%] p-4 text-xs font-medium min-h-[480px] flex flex-col items-end text-right">
               <div className="w-full flex justify-end mb-3">
-                <QRCode
-                  value={`https://djtextile.in/invoice-view/${orderData?.invoiceNumber}`}
-                  size={140}
-                />
+              <QRCode
+  value={`https://djtextile.in/invoices/${orderData?.invoiceNumber?.replace(/\//g, '')}.pdf`}
+  size={140}
+/>
               </div>
               <table className="w-[105%]  border border-black text-[13px] ">
                 <tbody>

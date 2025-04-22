@@ -13,7 +13,7 @@ const MyBills2 = () => {
   const [amountToPay, setAmountToPay] = useState("");
 
   const page = 1;
-  const firm = "shreesai";
+  const firm = "himanshi";
 
   useEffect(() => {
     fetchOrders();

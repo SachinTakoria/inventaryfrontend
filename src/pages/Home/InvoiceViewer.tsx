@@ -65,7 +65,8 @@ const InvoiceViewer = ({ invoiceId }: Props) => {
 
       {/* ✅ Invoice Number & Date */}
    {  !isGST && (<div className="flex justify-between mb-4 text-sm">
-        <p><strong>Invoice No:</strong> {invoice.invoiceNumber || "N/A"}</p>
+    <p><strong>Invoice No:</strong> {invoice.invoiceNumber ? (isGST ? invoice.invoiceNumber : invoice.invoiceNumber.replace(/^DJT\//, "")) : "N/A"}</p>
+
         <p><strong>Date:</strong> {moment(invoice.invoiceDate || invoice.createdAt).format("DD MMM, YYYY")}</p>
       </div>)}
 
@@ -128,11 +129,19 @@ const InvoiceViewer = ({ invoiceId }: Props) => {
   <div className="w-[40%] border border-black p-2 text-xs font-medium min-h-[340px] flex flex-col items-end text-right justify-between">
 
     <div className="w-full flex justify-end mb-2">
-      <QRCode value={window.location.href} size={100} />
+    <QRCode value={`https://djtextile.in/invoices/${invoice.invoiceNumber}.pdf`} size={100} />
+
     </div>
     <table className="w-full mt-1 border border-black text-[11px]">
       <tbody>
-        <tr><td className="border px-2 py-3 font-semibold w-[40%]">Invoice No</td><td className="border px-2 py-1 text-right">{invoice.invoiceNumber || "N/A"}</td></tr>
+        <tr><td className="border px-2 py-3 font-semibold w-[40%]">Invoice No</td><td className="border px-2 py-1 text-right">
+  {invoice.invoiceNumber
+    ? isGST
+      ? invoice.invoiceNumber
+      : invoice.invoiceNumber.replace(/^DJT\//, "")
+    : "N/A"}
+</td>
+</tr>
         <tr><td className="border px-2 py-3 font-semibold">Dated</td><td className="border px-2 py-1 text-right">{moment(invoice.invoiceDate || invoice.createdAt).format("DD MMM, YYYY")}</td></tr>
         <tr><td className="border px-2 py-3 font-semibold">Delivery Note</td><td className="border px-2 py-1 text-right">_</td></tr>
         <tr><td className="border px-2 py-3 font-semibold">Reference No. & Date</td><td className="border px-2 py-1 text-right">Other References</td></tr>

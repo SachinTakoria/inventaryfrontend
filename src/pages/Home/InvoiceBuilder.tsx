@@ -370,6 +370,10 @@ const InvoiceBuilder: React.FC = () => {
           setCustomerAddress("");
           setCustomerGST("");
           setCustomerState("");
+          setPreviousPending(0);
+setAmountPaid(0);
+setOldPendingAdjusted(0);
+
         }, 1000);
       } else {
         alert("❌ Failed to create invoice. Try again.");
@@ -484,12 +488,28 @@ const InvoiceBuilder: React.FC = () => {
             <div className="mb-6 text-center">
               <h1 className="text-2xl font-bold mb-1">ESTIMATED BILL</h1>
               <p className="text-sm">
-                <strong>Invoice No:</strong> {orderData?.invoiceNumber || "N/A"}
+              <strong>Invoice No:</strong>{" "}
+{orderData?.invoiceNumber
+  ? withGST
+    ? orderData.invoiceNumber
+    : orderData.invoiceNumber.replace(/^DJT\//, "") // remove prefix for estimated
+  : "N/A"}
+
               </p>
               <p className="text-sm">
-                <strong>Dated:</strong>{" "}
-                {moment(orderData?.createdAt).format("DD MMM, YYYY")}
-              </p>
+  <strong>Dated:</strong>{" "}
+  {isGeneratingPDF ? (
+    moment(invoiceDate).format("DD MMM, YYYY")
+  ) : (
+    <input
+      type="date"
+      className="border px-2 py-[2px] text-sm"
+      value={moment(invoiceDate).format("YYYY-MM-DD")}
+      onChange={(e) => setInvoiceDate(new Date(e.target.value))}
+    />
+  )}
+</p>
+
             </div>
           )}
 
@@ -840,10 +860,8 @@ const InvoiceBuilder: React.FC = () => {
                 {/* ✅ RIGHT SIDE: QR + Invoice Table */}
                 <div className="w-[34%] p-4 text-xs font-medium min-h-[480px] flex flex-col items-end text-right">
                   <div className="w-full flex justify-end mb-3">
-                    <QRCode
-                      value={`https://djtextile.in/invoice-view/${orderData?.invoiceNumber}`}
-                      size={140}
-                    />
+                  <QRCode value={`https://djtextile.in/invoices/${orderData?.invoiceNumber}.pdf`} size={140} />
+
                   </div>
                   <table className="w-[100%]  border border-black text-[13px] ">
                     <tbody>
