@@ -95,9 +95,10 @@ const InvoiceViewer2 = ({ invoiceId }: Props) => {
   <div className="w-[35%] p-4 text-xs font-medium flex flex-col items-end text-right border-l border-black">
     <div className="w-full flex justify-end mb-1">
     <QRCode
-  value={`https://djtextile.in/invoices/${invoice?.invoiceNumber?.replace(/\//g, '')}.pdf`}
+  value={`https://inventary-production-e5a5.up.railway.app/invoices/${invoice?.invoiceNumber?.replace(/\//g, '')}.pdf`}
   size={140}
 />
+
     </div>
     <table className="w-full border border-black text-[11px] mt-1">
       <tbody>
