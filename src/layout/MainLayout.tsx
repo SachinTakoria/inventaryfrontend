@@ -20,13 +20,10 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    
     if (user && user.role) {
       setReady(true);
     }
   }, [user]);
-
-  
 
   if (!ready) {
     return <div className="p-5 text-lg font-medium">Loading Sidebar...</div>;
@@ -35,59 +32,86 @@ const MainLayout = ({ children }: { children: React.ReactNode }) => {
   const isSubadmin = user?.role === 'subadmin';
 
   return (
-    <>
-      <div className="flex items-start lg:gap-x-2">
-        <Sidebar collapsed={selector.collapsed} breakPoint="lg" toggled={selector.toggle}>
-          <Menu>
-            <MenuItem className="lg:hidden" onClick={() => dispatch(toggleSidebar())}>
-              {selector.toggle ? <IoIosArrowDropright className="text-2xl" /> : <IoIosArrowDropleft className="text-2xl" />}
-            </MenuItem>
+    <div className="flex min-h-screen bg-gray-50 text-gray-700">
+      {/* Sidebar */}
+      <Sidebar 
+        collapsed={selector.collapsed} 
+        breakPoint="lg" 
+        toggled={selector.toggle}
+        backgroundColor="#ffffffcc"
+        className="shadow-md border-r border-gray-200 backdrop-blur-md"
+      >
+        <Menu 
+          menuItemStyles={{
+            button: {
+              padding: '12px 20px',
+              color: '#374151',
+              fontWeight: 500,
+              borderRadius: '8px',
+              margin: '8px',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: '#eef2ff',
+                color: '#4338ca',
+              },
+            },
+          }}
+        >
+          {/* Collapse/Expand Button */}
+          <MenuItem 
+            className="lg:hidden" 
+            onClick={() => dispatch(toggleSidebar())}
+            icon={selector.toggle ? <IoIosArrowDropright size={24} /> : <IoIosArrowDropleft size={24} />}
+          >
+            {selector.toggle ? '' : 'Collapse'}
+          </MenuItem>
 
-            {isSubadmin ? (
-              <>
-               <MenuItem component={<Link to="/invoice-builder" />} icon={<FaFileInvoice className="text-2xl" />}>
-                  DJInvoice
-                </MenuItem>
-                <MenuItem component={<Link to="/invoice-builder-2" />} icon={<FaFileInvoice className="text-2xl" />}>
-                  HTINVOICE
-                </MenuItem>
-              </>
-            ) : (
-              <>
-                <MenuItem component={<Link to="/" />} icon={<MdOutlineSpaceDashboard className="text-2xl" />}>
-                  Dashboard
-                </MenuItem>
-                <MenuItem component={<Link to="/purchase-items" />} icon={<BiSolidPurchaseTag className="text-2xl" />}>
-                  Inventory
-                </MenuItem>
-                <MenuItem component={<Link to="/add-product" />} icon={<AiOutlinePlus className="text-2xl" />}>
-                  Add Product
-                </MenuItem>
-                <MenuItem component={<Link to="/my-product" />} icon={<MdProductionQuantityLimits className="text-2xl" />}>
-                  My Products
-                </MenuItem>
-                <MenuItem component={<Link to="/invoice-builder" />} icon={<FaFileInvoice className="text-2xl" />}>
-                  DJInvoice
-                </MenuItem>
-                <MenuItem component={<Link to="/my-bills" />} icon={<RiBillLine className="text-2xl" />}>
-                  DJBills
-                </MenuItem>
-                <MenuItem component={<Link to="/invoice-builder-2" />} icon={<FaFileInvoice className="text-2xl" />}>
-                  HTINVOICE
-                </MenuItem>
-                <MenuItem component={<Link to="/shreesai-bills" />} icon={<RiBillLine className="text-2xl" />}>
-                  HTBills
-                </MenuItem>
-              </>
-            )}
-          </Menu>
-        </Sidebar>
+          {/* Main Menu */}
+          {isSubadmin ? (
+            <>
+              <MenuItem component={<Link to="/invoice-builder" />} icon={<FaFileInvoice size={22} />}>
+                DJ Invoice
+              </MenuItem>
+              <MenuItem component={<Link to="/invoice-builder-2" />} icon={<FaFileInvoice size={22} />}>
+                HT Invoice
+              </MenuItem>
+            </>
+          ) : (
+            <>
+              <MenuItem component={<Link to="/" />} icon={<MdOutlineSpaceDashboard size={22} />}>
+                Dashboard
+              </MenuItem>
+              <MenuItem component={<Link to="/purchase-items" />} icon={<BiSolidPurchaseTag size={22} />}>
+                Inventory
+              </MenuItem>
+              <MenuItem component={<Link to="/add-product" />} icon={<AiOutlinePlus size={22} />}>
+                Add Product
+              </MenuItem>
+              <MenuItem component={<Link to="/my-product" />} icon={<MdProductionQuantityLimits size={22} />}>
+                My Products
+              </MenuItem>
+              <MenuItem component={<Link to="/invoice-builder" />} icon={<FaFileInvoice size={22} />}>
+                DJ Invoice
+              </MenuItem>
+              <MenuItem component={<Link to="/my-bills" />} icon={<RiBillLine size={22} />}>
+                DJ Bills
+              </MenuItem>
+              <MenuItem component={<Link to="/invoice-builder-2" />} icon={<FaFileInvoice size={22} />}>
+                HT Invoice
+              </MenuItem>
+              <MenuItem component={<Link to="/shreesai-bills" />} icon={<RiBillLine size={22} />}>
+                HT Bills
+              </MenuItem>
+            </>
+          )}
+        </Menu>
+      </Sidebar>
 
-        <div className="w-full">
-          {children}
-        </div>
+      {/* Main Content */}
+      <div className="flex-1 p-6 overflow-auto">
+        {children}
       </div>
-    </>
+    </div>
   );
 };
 
