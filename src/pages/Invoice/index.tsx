@@ -4,7 +4,7 @@ import Loader from '../../components/Loader';
 import moment from 'moment';
 import QRCode from 'react-qr-code';
 import { toWords } from 'number-to-words';
-import logo from '../../assets/djLogo2.png';
+// import logo from '../../assets/djLogo2.png';
 
 const Invoice = () => {
   const { id } = useParams();

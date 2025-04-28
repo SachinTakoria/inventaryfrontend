@@ -92,8 +92,9 @@ const HomePage = () => {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <BasicChart />
-        <PieChartDemo />
+      <BasicChart stats={stats} />
+<PieChartDemo stats={stats} />
+
       </div>
     </div>
   );

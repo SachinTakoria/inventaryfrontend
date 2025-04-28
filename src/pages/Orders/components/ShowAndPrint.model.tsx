@@ -6,7 +6,7 @@ import QRCode from "react-qr-code";
 import { usePDF } from "react-to-pdf";
 import { useEffect, useState } from "react";
 import { toWords } from "number-to-words";
-import logo from "../../../assets/djLogo2.png";
+// import logo from "../../../assets/djLogo2.png";
 
 const ShowAndPrintModel = ({ setVisible, visible, id }: any) => {
   const { data, isLoading, isError, isFetching } = useGetInvoiceByIdQuery(id);

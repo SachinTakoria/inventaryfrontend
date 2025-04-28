@@ -1,70 +1,29 @@
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
 
-import   { useState, useEffect } from 'react';
-import { Chart } from 'primereact/chart';
-import { useDashboardDataQuery } from '../../../provider/queries/Users.query';
-import Loader from '../../../components/Loader';
-import { useLocation } from 'react-router-dom';
+const BasicChart = ({ stats }: { stats: any }) => {
+  const data = [
+    { name: "Today's Sale", value: stats?.todaySale || 0 },
+    { name: "Today's Bills", value: stats?.todayBills || 0 },
+    { name: "Total Bills", value: stats?.totalOrders || 0 },
+  ];
 
-export default function BasicChart() {
+  return (
+    <div className="bg-white shadow-md rounded-xl p-6 w-full">
+      <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+        📊 Overview
+      </h2>
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="value" fill="#6366f1" barSize={50} radius={[8, 8, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
 
-    const {  data,isError,isLoading,isFetching } = useDashboardDataQuery({})
-    const location = useLocation()
-
-    const [chartData, setChartData] = useState({});
-    const [chartOptions, setChartOptions] = useState({});
-
-    
-    useEffect(() => {
-
-            if(!data){
-                return
-            }
-
-        const chartData = {
-            labels: ['user', 'orders','sell' ],
-            datasets: [
-                {
-                    label: ['Total'],
-                    data: [data.consumers, data.orders, data.sell],
-                    backgroundColor: [
-                        'rgba(255, 159, 64, 0.2)',
-                        'rgba(75, 192, 192, 0.2)',
-                        'rgba(54, 162, 235, 0.2)', 
-                    ],
-                    borderColor: [
-                        'rgb(255, 159, 64)',
-                        'rgb(75, 192, 192)',
-                        'rgb(54, 162, 235)', 
-                    ],
-                    borderWidth: 1
-                }
-            ]
-        };
-        const options = {
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        };
-
-        setChartData(chartData);
-        setChartOptions(options);
-    }, [data, location]);
-
-    if (isFetching || isLoading) {
-        return <Loader />
-    }
-    if (isError) {
-        return <>
-            something went wrong
-        </>
-    }
-
-
-    return ( 
-            <Chart type="bar" width='' className=' w-full lg:w-1/2 ' data={chartData} options={chartOptions} />
-    
-    )
-}
-
+export default BasicChart;

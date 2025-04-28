@@ -1,64 +1,42 @@
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
-import   { useState, useEffect } from 'react';
-import { Chart } from 'primereact/chart';
-import { useDashboardDataQuery } from '../../../provider/queries/Users.query';
-import { useLocation } from 'react-router-dom';
-import Loader from '../../../components/Loader';
+const PieChartDemo = ({ stats }: { stats: any }) => {
+  const data = [
+    { name: "Today's Sale", value: stats?.todaySale || 0 },
+    { name: "Yesterday's Sale", value: stats?.yesterdaySale || 0 },
+    { name: "Today's Bills", value: stats?.todayBills || 0 },
+    { name: "Total Bills", value: stats?.totalOrders || 0 },
+  ];
 
-export default function PieChartDemo() {
-    const [chartData, setChartData] = useState({});
-    const [chartOptions, setChartOptions] = useState({});
-    const { data, isError, isLoading, isFetching } = useDashboardDataQuery({})
-    const location = useLocation()
+  const COLORS = ["#6366f1", "#34d399", "#facc15", "#f87171"];
 
-    useEffect(() => {
-        if (!data) {
-            return
-        }
+  return (
+    <div className="bg-white shadow-md rounded-xl p-6 w-full">
+      <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+        ✨ Sales Distribution
+      </h2>
+      <ResponsiveContainer width="100%" height={300}>
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            outerRadius={100}
+            innerRadius={60}
+            fill="#8884d8"
+            paddingAngle={5}
+            label
+          >
+            {data.map((_, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip />
+          <Legend />
+        </PieChart>
+      </ResponsiveContainer>
+    </div>
+  );
+};
 
-        const documentStyle = getComputedStyle(document.documentElement);
-        const chartData = {
-            labels: ['user', 'orders', 'sell'],
-            datasets: [
-                {
-                    data: [data.consumers, data.orders, data.sell],
-                    backgroundColor: [
-                        documentStyle.getPropertyValue('--blue-500'),
-                        documentStyle.getPropertyValue('--yellow-500'),
-                        documentStyle.getPropertyValue('--green-500')
-                    ],
-                    hoverBackgroundColor: [
-                        documentStyle.getPropertyValue('--blue-400'),
-                        documentStyle.getPropertyValue('--yellow-400'),
-                        documentStyle.getPropertyValue('--green-400')
-                    ]
-                }
-            ]
-        }
-        const options = {
-            plugins: {
-                legend: {
-                    labels: {
-                        usePointStyle: true
-                    }
-                }
-            }
-        };
-
-        setChartData(chartData);
-        setChartOptions(options);
-    }, [data, location]);
-    if (isFetching || isLoading) {
-        return <Loader />
-    }
-    if (isError) {
-        return <>
-            something went wrong
-        </>
-    }
-
-    return ( 
-            <Chart type="pie" data={chartData} options={chartOptions} className="w-full lg:w-1/2" />
-      
-    )
-}
+export default PieChartDemo;
