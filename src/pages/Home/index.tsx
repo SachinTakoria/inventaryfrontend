@@ -14,6 +14,7 @@ const HomePage = () => {
   const [stats, setStats] = useState({
     todaySale: 0,
     yesterdaySale: 0,
+    todayBills: 0, 
     totalUsers: 0,
     totalOrders: 0,
   });
@@ -59,6 +60,7 @@ const HomePage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card title="Today's Sale" value={`₹${stats.todaySale}`} />
         <Card title="Yesterday's Sale" value={`₹${stats.yesterdaySale}`} />
+        <Card title="Today's Bills" value={stats.todayBills} />
         {/* <Card title="Total Users" value={stats.totalUsers} /> */}
         <Card title="Total Bills" value={stats.totalOrders} />
       </div>
