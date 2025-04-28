@@ -1,21 +1,27 @@
-import { useEffect, useState } from "react";
+import {useEffect,  useState } from "react";
 import axios from "axios";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import moment from "moment";
+// import { ChevronDown, ChevronUp } from "lucide-react";
+// import moment from "moment";
+import PurchaseInvoiceForm from "../../components/PurchaseInvoiceForm";
+import PurchaseInvoiceList from "../../components/PurchaseInvoiceList"; 
+
+
 
 const Inventory = () => {
   const [products, setProducts] = useState<any[]>([]);
-  const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
-  const [purchaseHistory, setPurchaseHistory] = useState<Record<string, any[]>>({});
-  const [newPurchase, setNewPurchase] = useState({
-    supplier: "",
-    quantity: 0,
-    price: 0,
-    date: "",
-    remark: "",
-  });
-  const [addingFor, setAddingFor] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [refreshInvoices, setRefreshInvoices] = useState(false);
+
+  // const [expandedProductId, setExpandedProductId] = useState<string | null>(null);
+  // const [purchaseHistory, setPurchaseHistory] = useState<Record<string, any[]>>({});
+  // const [newPurchase, setNewPurchase] = useState({
+  //   supplier: "",
+  //   quantity: 0,
+  //   price: 0,
+  //   date: "",
+  //   remark: "",
+  // });
+  // const [addingFor, setAddingFor] = useState<string | null>(null);
+  // const [search, setSearch] = useState("");
 
   useEffect(() => {
     fetchProducts();
@@ -32,80 +38,86 @@ const Inventory = () => {
     }
   };
 
-  const fetchPurchaseHistory = async (productId: string) => {
-    try {
-      const res = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/purchases/product/${productId}`
-      );
-      const sorted = res.data.sort(
-        (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-      setPurchaseHistory((prev) => ({ ...prev, [productId]: sorted }));
-    } catch (err) {
+  // const fetchPurchaseHistory = async (productId: string) => {
+  //   try {
+  //     const res = await axios.get(
+  //       `${import.meta.env.VITE_BACKEND_URL}/purchases/product/${productId}`
+  //     );
+  //     const sorted = res.data.sort(
+  //       (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  //     );
+  //     setPurchaseHistory((prev) => ({ ...prev, [productId]: sorted }));
+  //   } catch (err) {
      
-    }
-  };
+  //   }
+  // };
 
-  const toggleExpand = async (productId: string) => {
-    if (expandedProductId === productId) {
-      setExpandedProductId(null);
-    } else {
-      setExpandedProductId(productId);
-      await fetchPurchaseHistory(productId);
-    }
-  };
+  // const toggleExpand = async (productId: string) => {
+  //   if (expandedProductId === productId) {
+  //     setExpandedProductId(null);
+  //   } else {
+  //     setExpandedProductId(productId);
+  //     await fetchPurchaseHistory(productId);
+  //   }
+  // };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewPurchase({ ...newPurchase, [e.target.name]: e.target.value });
-  };
+  // const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   setNewPurchase({ ...newPurchase, [e.target.name]: e.target.value });
+  // };
 
-  const handleAddPurchase = async (productId: string) => {
-    try {
-      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/purchases`, {
-        ...newPurchase,
-        product: productId,
-      });
+  // const handleAddPurchase = async (productId: string) => {
+  //   try {
+  //     await axios.post(`${import.meta.env.VITE_BACKEND_URL}/purchases`, {
+  //       ...newPurchase,
+  //       product: productId,
+  //     });
   
-      // Clear form
-      setNewPurchase({ supplier: "", quantity: 0, price: 0, date: "", remark: "" });
-      setAddingFor(null);
+  //     // Clear form
+  //     setNewPurchase({ supplier: "", quantity: 0, price: 0, date: "", remark: "" });
+  //     setAddingFor(null);
   
-      // Refetch updated product list
-      await fetchProducts();  // yahi stock ko refresh kar dega UI me
+  //     // Refetch updated product list
+  //     await fetchProducts();  // yahi stock ko refresh kar dega UI me
   
-      // Also refetch updated purchase history
-      await fetchPurchaseHistory(productId);
-    } catch (err) {
+  //     // Also refetch updated purchase history
+  //     await fetchPurchaseHistory(productId);
+  //   } catch (err) {
   
-    }
-  };
+  //   }
+  // };
   
   
 
-  const filteredProducts = products.filter((product) =>
-    product.productName.toLowerCase().includes(search.toLowerCase()) ||
-    product.category.toLowerCase().includes(search.toLowerCase())
-  );
+  // const filteredProducts = products.filter((product) =>
+  //   product.productName.toLowerCase().includes(search.toLowerCase()) ||
+  //   product.category.toLowerCase().includes(search.toLowerCase())
+  // );
 
 
-  const handleDeletePurchase = async (purchaseId: string, productId: string, quantity: number) => {
-    const confirm = window.confirm("Are you sure you want to delete this purchase?");
-    if (!confirm) return;
+  // const handleDeletePurchase = async (purchaseId: string, productId: string, quantity: number) => {
+  //   const confirm = window.confirm("Are you sure you want to delete this purchase?");
+  //   if (!confirm) return;
   
-    try {
-      await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/purchases/${purchaseId}`);
-      await fetchProducts();
-      await fetchPurchaseHistory(productId);
-    } catch (err) {
+  //   try {
+  //     await axios.delete(`${import.meta.env.VITE_BACKEND_URL}/purchases/${purchaseId}`);
+  //     await fetchProducts();
+  //     await fetchPurchaseHistory(productId);
+  //   } catch (err) {
      
-    }
-  };
+  //   }
+  // };
   
   
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-semibold text-gray-700 mb-4">📦 Inventory Overview</h1>
+  <PurchaseInvoiceForm setRefreshInvoices={setRefreshInvoices} refreshProducts={fetchProducts} />
+
+
+       <PurchaseInvoiceList refreshInvoices={refreshInvoices} />
+
+
+      {/* <h1 className="text-2xl font-semibold text-gray-700 mb-4">📦 Inventory Overview</h1>
 
       <input
         type="text"
@@ -207,7 +219,7 @@ const Inventory = () => {
             </>
           ))}
         </tbody>
-      </table>
+      </table> */}
     </div>
   );
 };

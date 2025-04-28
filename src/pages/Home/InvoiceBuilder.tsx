@@ -602,7 +602,7 @@ setOldPendingAdjusted(0);
                     <input
                       value={customerState}
                       onChange={(e) => setCustomerState(e.target.value)}
-                      className="border-b border-dashed px-2 text-sm w-[200px] outline-none"
+                      className="border-b mb-4 border-dashed px-2 text-sm w-[200px] outline-none"
                     />
                   )}
                 </p>
