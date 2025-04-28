@@ -717,9 +717,9 @@ const InvoiceBuilder2: React.FC = () => {
             <div className="w-[34%] p-4 text-xs font-medium min-h-[480px] flex flex-col items-end text-right">
               <div className="w-full flex justify-end mb-3">
               <QRCode
-  value={`https://inventary-production-e5a5.up.railway.app/invoices/${orderData?.invoiceNumber}.pdf`}
-  size={140}
-/>
+      value={`https://djtextile.in/invoices/${orderData?.invoiceNumber.replace(/\//g, '')}.pdf`}
+      size={140}
+    />
 
               </div>
               <table className="w-[105%]  border border-black text-[13px] ">
