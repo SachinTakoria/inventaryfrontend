@@ -1,10 +1,16 @@
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
 
-const BasicChart = ({ stats }: { stats: any }) => {
+interface BasicChartProps {
+  stats: any;
+  purchaseSummary: any;
+}
+
+const BasicChart = ({ stats, purchaseSummary }: BasicChartProps) => {
   const data = [
     { name: "Today's Sale", value: stats?.todaySale || 0 },
     { name: "Today's Bills", value: stats?.todayBills || 0 },
     { name: "Total Bills", value: stats?.totalOrders || 0 },
+    { name: "Today's Purchase", value: purchaseSummary?.todayTotal || 0 }, // ✅ Added purchase
   ];
 
   return (
