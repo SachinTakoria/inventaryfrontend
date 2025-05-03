@@ -58,6 +58,11 @@ const PurchaseInvoiceList = ({ refreshInvoices }: { refreshInvoices: boolean }) 
     return supplierMatch || invoiceNumberMatch || dateMatch;
   });
 
+  const calculateTotalQuantity = (items: InvoiceItem[]) => {
+    return items.reduce((sum, item) => sum + item.quantity, 0);
+  };
+  
+
 
   const handleDeleteInvoice = async (id: string) => {
     const confirmDelete = window.confirm("Are you sure you want to delete this invoice?");
@@ -82,6 +87,7 @@ const PurchaseInvoiceList = ({ refreshInvoices }: { refreshInvoices: boolean }) 
         data={invoices.map((invoice) => ({
           Supplier: invoice.supplier,
           InvoiceNumber: invoice.invoiceNumber,
+          TotalQuantity:calculateTotalQuantity(invoice.items),
           Date: moment(invoice.date).format("DD/MM/YYYY"),
           TotalAmount: invoice.totalAmount,
           Products: invoice.items.map(item => `${item.product?.productName || "Unknown"} (Qty: ${item.quantity})`).join(", ")
@@ -108,6 +114,8 @@ const PurchaseInvoiceList = ({ refreshInvoices }: { refreshInvoices: boolean }) 
               <th className="p-3 text-left">S.No</th>
               <th className="p-3 text-left">Supplier</th>
               <th className="p-3 text-left">Invoice Number</th>
+              <th className="p-3 text-left">Total Quantity</th>
+
               <th className="p-3 text-left">Date</th>
               <th className="p-3 text-left">Total Amount</th>
               <th className="p-3 text-center">Action</th>
@@ -120,6 +128,8 @@ const PurchaseInvoiceList = ({ refreshInvoices }: { refreshInvoices: boolean }) 
                   <td className="p-3">{index + 1}</td>
                   <td className="p-3">{invoice.supplier}</td>
                   <td className="p-3">{invoice.invoiceNumber}</td>
+                  <td className="p-3 font-medium">{calculateTotalQuantity(invoice.items)}</td>
+
                   <td className="p-3">{moment(invoice.date).format("DD/MM/YYYY")}</td>
                   <td className="p-3 font-semibold">
                     {invoice.gstType === "with" ? (

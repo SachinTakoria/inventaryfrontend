@@ -195,10 +195,11 @@ const InvoiceBuilder: React.FC = () => {
   const generateInvoiceAndUpdateStock = async () => {
     document.activeElement instanceof HTMLElement &&
       document.activeElement.blur();
-
+      setIsGeneratingPDF(true);
     const token = localStorage.getItem("token");
     if (!token) {
       alert("❌ Please login again.");
+      setIsGeneratingPDF(false);
       return;
     }
 
@@ -343,7 +344,7 @@ const InvoiceBuilder: React.FC = () => {
           );
         }
 
-        setIsGeneratingPDF(true);
+        
 
         if (!user || !user._id) {
           alert("❌ User not found. Please login again.");
@@ -367,6 +368,7 @@ const InvoiceBuilder: React.FC = () => {
           ]);
 
           setCustomerName("");
+          setCustomerPhone("");
           setCustomerAddress("");
           setCustomerGST("");
           setCustomerState("");
@@ -439,6 +441,12 @@ setOldPendingAdjusted(0);
 
   return (
     <div className="p-4">
+    {isGeneratingPDF && (
+      <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-white/60 z-[9999]">
+        <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+      </div>
+    )}
+
       <div>
         {/* CONTROLS */}
         <div className="print:hidden flex flex-wrap gap-4 mb-4">
@@ -858,7 +866,7 @@ setOldPendingAdjusted(0);
                 </div>
 
                 {/* ✅ RIGHT SIDE: QR + Invoice Table */}
-                <div className="w-[34%] p-4 text-xs font-medium min-h-[480px] flex flex-col items-end text-right">
+                <div className="w-[34%] p-4 text-sm print:text-[14px] font-medium min-h-[480px] flex flex-col items-end text-right">
                   <div className="w-full flex justify-end mb-3">
                   <QRCode
       value={`https://djtextile.in/invoices/${orderData?.invoiceNumber.replace(/\//g, '')}.pdf`}
@@ -935,7 +943,8 @@ setOldPendingAdjusted(0);
           )}
 
           <div className="border border-black  p-4">
-            <table className="w-full border mt-4 text-sm">
+          <table className="w-full border mt-4 text-base print:text-[14px]">
+
               <thead className="bg-gray-100">
                 <tr>
                   <th className="border py-1">Sr.</th>
@@ -959,11 +968,12 @@ setOldPendingAdjusted(0);
                       <td className="border text-center py-1">{index + 1}</td>
                       <td className="border text-center py-1">
                         {isGeneratingPDF ? (
-                          <div className="text-xs">{item.name}</div>
+                          <div className="text-md print:text-[14px]">{item.name}</div>
+
                         ) : (
                           <div className="relative">
                             <input
-                              className="w-full text-xs px-2 py-1 border rounded-sm bg-white"
+                              className="w-full text-md print:text-[14px] px-2 py-1 border rounded-sm bg-white"
                               value={item.name}
                               onChange={(e) =>
                                 handleProductNameChange(index, e.target.value)
@@ -976,7 +986,7 @@ setOldPendingAdjusted(0);
                                   {productSuggestions.map((prod, i) => (
                                     <li
                                       key={i}
-                                      className="px-2 py-1 text-xs hover:bg-gray-100 cursor-pointer"
+                                      className="px-2 py-1 text-md print:text-[14px] hover:bg-gray-100 cursor-pointer"
                                       onClick={() =>
                                         handleSuggestionSelect(index, prod)
                                       }
@@ -994,11 +1004,11 @@ setOldPendingAdjusted(0);
 
                       <td className="border text-center py-1">
                         {isGeneratingPDF ? (
-                          <div className="text-xs">{item.quantity}</div>
+                          <div className="text-md print:text-[14px]">{item.quantity}</div>
                         ) : (
                           <input
                             type="number"
-                            className="w-16 text-xs px-2 py-1 border rounded-sm"
+                            className="w-16 text-md print:text-[14px] px-2 py-1 border rounded-sm"
                             value={item.quantity}
                             onChange={(e) =>
                               handleValueChange(
@@ -1013,11 +1023,11 @@ setOldPendingAdjusted(0);
 
                       <td className="border text-center py-1">
                         {isGeneratingPDF ? (
-                          <div className="text-xs">₹{item.price}</div>
+                          <div className="text-md print:text-[14px]">₹{item.price}</div>
                         ) : (
                           <input
                             type="number"
-                            className="w-20 text-xs px-2 py-1 border rounded-sm"
+                            className="w-20 text-md print:text-[14px] px-2 py-1 border rounded-sm"
                             value={item.price}
                             onChange={(e) =>
                               handleValueChange(
@@ -1031,12 +1041,12 @@ setOldPendingAdjusted(0);
                       </td>
                       <td className="border text-center py-1">
                         {isGeneratingPDF ? (
-                          <div className="text-xs">
+                          <div className="text-md print:text-[14px]">
                             {item.discount ? `${item.discount}%` : "—"}
                           </div>
                         ) : (
                           <select
-                            className="text-xs border px-1 py-0"
+                            className="text-md print:text-[14px] border px-1 py-0"
                             value={item.discount || 0}
                             onChange={(e) => {
                               const updatedItems = [...editableItems];
@@ -1067,7 +1077,7 @@ setOldPendingAdjusted(0);
                         <td className="border text-center py-1 action-cell">
                           <button
                             onClick={() => deleteRow(index)}
-                            className="text-red-500 text-xs"
+                            className="text-red-500 text-sm print:text-[14px]"
                           >
                             ❌
                           </button>
@@ -1090,7 +1100,7 @@ setOldPendingAdjusted(0);
 
               {/* RIGHT SIDE – Gross / Discount / CGST / SGST / Total */}
               <div className="  mt-1 text-sm w-[38%]">
-                <div className="p-2 text-xs ">
+                <div className="p-2 text-sm print:text-[14px] ">
                   <div className="grid grid-cols-2 gap-[1px]">
                     {/* Gross */}
                     <div className="border border-gray-400 font-bold px-1 py-[3px]">
@@ -1257,13 +1267,16 @@ setOldPendingAdjusted(0);
                 onClick={generateInvoiceAndUpdateStock}
                 className="px-6 py-2 bg-red-500 text-white rounded disabled:bg-gray-400"
                 disabled={
+                  isGeneratingPDF ||
                   editableItems.length === 0 ||
                   editableItems
                     .filter((item) => item.name.trim() !== "")
                     .some((item) => !item._id || item._id.trim() === "")
                 }
+                
               >
-                Generate Invoice
+               {isGeneratingPDF ? "Generating..." : "Generate Invoice"}
+
               </button>
             )}
           </div>

@@ -224,7 +224,7 @@ const InvoiceBuilder2: React.FC = () => {
       );
       return;
     }
-
+    setIsGeneratingPDF(true);
     const itemsToSave = editableItems
       .filter(
         (item) => item._id && item.name.trim() !== "" && item.quantity > 0
@@ -343,7 +343,7 @@ const InvoiceBuilder2: React.FC = () => {
           );
         }
 
-        setIsGeneratingPDF(true);
+        // setIsGeneratingPDF(true);
 
         if (!user || !user._id) {
           alert("❌ User not found. Please login again.");
@@ -439,6 +439,13 @@ const InvoiceBuilder2: React.FC = () => {
 
   return (
     <div className="p-4">
+      {isGeneratingPDF && (
+      <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-white/60 z-[9999]">
+        <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+      </div>
+    )}
+    
+
       <div>
         {/* CONTROLS */}
         <div className="print:hidden flex flex-wrap gap-4 mb-4">
@@ -813,7 +820,7 @@ const InvoiceBuilder2: React.FC = () => {
                       <td className="border text-center py-1">{index + 1}</td>
                       <td className="border text-center py-1">
                         {isGeneratingPDF ? (
-                          <div className="text-xs">{item.name}</div>
+                          <div className="text-md">{item.name}</div>
                         ) : (
                           <div className="relative">
                             <input
@@ -848,7 +855,7 @@ const InvoiceBuilder2: React.FC = () => {
 
                       <td className="border text-center py-1">
                         {isGeneratingPDF ? (
-                          <div className="text-xs">{item.quantity}</div>
+                          <div className="text-md">{item.quantity}</div>
                         ) : (
                           <input
                             type="number"
@@ -867,7 +874,7 @@ const InvoiceBuilder2: React.FC = () => {
 
                       <td className="border text-center py-1">
                         {isGeneratingPDF ? (
-                          <div className="text-xs">₹{item.price}</div>
+                          <div className="text-md">₹{item.price}</div>
                         ) : (
                           <input
                             type="number"
@@ -1115,18 +1122,16 @@ const InvoiceBuilder2: React.FC = () => {
           {/* Print Button */}
           <div className="mt-4 print:hidden">
             {!isGeneratingPDF && (
-              <button
-                onClick={generateInvoiceAndUpdateStock}
-                className="px-6 py-2 bg-red-500 text-white rounded disabled:bg-gray-400"
-                disabled={
-                  editableItems.length === 0 ||
-                  editableItems
-                    .filter((item) => item.name.trim() !== "")
-                    .some((item) => !item._id || item._id.trim() === "")
-                }
-              >
-                Generate Invoice
-              </button>
+             <button
+             onClick={generateInvoiceAndUpdateStock}
+             className="px-6 py-2 bg-red-500 text-white rounded disabled:bg-gray-400"
+             disabled={isGeneratingPDF || editableItems.length === 0 || editableItems
+               .filter((item) => item.name.trim() !== "")
+               .some((item) => !item._id || item._id.trim() === "")}
+           >
+             {isGeneratingPDF ? "Generating..." : "Generate Invoice"}
+           </button>
+           
             )}
           </div>
         </div>
