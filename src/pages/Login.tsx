@@ -103,12 +103,12 @@ const Login = () => {
             />
 
             <div className="mt-6 text-sm flex justify-between text-gray-600">
-              <p>
+              {/* <p>
                 Don't have an account?{' '}
                 <Link to="/register" className="text-blue-600 hover:underline font-medium">
                   Register
                 </Link>
-              </p>
+              </p> */}
               {/* <Link to="#" className="text-blue-600 hover:underline font-medium">
                 Forgot Password?
               </Link> */}
