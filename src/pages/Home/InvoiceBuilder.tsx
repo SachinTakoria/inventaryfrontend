@@ -174,6 +174,11 @@ const InvoiceBuilder: React.FC = () => {
     (sum, item) => sum + item.totalPrice,
     0
   );
+  const totalQuantity = editableItems
+  .filter(item => item.name.trim() !== "" && item.price > 0 && item.quantity > 0)
+  .reduce((sum, item) => sum + item.quantity, 0);
+
+
   const discountAmount = (finalPrice * discountPercent) / 100;
 
   const priceAfterDiscount = finalPrice - discountAmount;
@@ -944,149 +949,142 @@ setOldPendingAdjusted(0);
 
           <div className="border border-black  p-4">
           <table className="w-full border mt-4 text-base print:text-[14px]">
-
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="border py-1">Sr.</th>
-                  <th className="border py-1">Description of Goods </th>
-                  <th className="border py-1">HSN/SAC </th>
-                  <th className="border py-1">Quantity </th>
-                  <th className="border py-1">Rate</th>
-                  <th className="border py-1">Discount</th>
-
-                  <th className="border py-1">Amount</th>
-                  {!isGeneratingPDF && (
-                    <th className="border py-1 action-header">Action</th>
+  <thead className="bg-gray-100">
+    <tr>
+      <th className="border py-1">Sr.</th>
+      <th className="border py-1">Description of Goods </th>
+      <th className="border py-1">HSN/SAC </th>
+      <th className="border py-1">Quantity </th>
+      <th className="border py-1">Rate</th>
+      <th className="border py-1">Discount</th>
+      <th className="border py-1">Amount</th>
+      {!isGeneratingPDF && (
+        <th className="border py-1 action-header">Action</th>
+      )}
+    </tr>
+  </thead>
+  <tbody>
+    {editableItems
+      .filter((item) => item.name.trim() !== "" || !isGeneratingPDF) // ❌ skip blank rows in print
+      .map((item, index) => (
+        <tr key={index}>
+          <td className="border text-center py-1">{index + 1}</td>
+          <td className="border text-center py-1">
+            {isGeneratingPDF ? (
+              <div className="text-md print:text-[14px]">{item.name}</div>
+            ) : (
+              <div className="relative">
+                <input
+                  className="w-full text-md print:text-[14px] px-2 py-1 border rounded-sm bg-white"
+                  value={item.name}
+                  onChange={(e) =>
+                    handleProductNameChange(index, e.target.value)
+                  }
+                />
+                {/* Dropdown */}
+                {productSuggestions.length > 0 &&
+                  index === editableItems.length - 1 && (
+                    <ul className="absolute top-full left-0 mt-1 bg-white border w-full shadow z-50 max-h-40 overflow-y-auto text-left">
+                      {productSuggestions.map((prod, i) => (
+                        <li
+                          key={i}
+                          className="px-2 py-1 text-md print:text-[14px] hover:bg-gray-100 cursor-pointer"
+                          onClick={() => handleSuggestionSelect(index, prod)}
+                        >
+                          {prod.productName} - ₹{prod.price}
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                </tr>
-              </thead>
-              <tbody>
-                {editableItems
-                  .filter((item) => item.name.trim() !== "" || !isGeneratingPDF) // ❌ skip blank rows in print
-                  .map((item, index) => (
-                    <tr key={index}>
-                      <td className="border text-center py-1">{index + 1}</td>
-                      <td className="border text-center py-1">
-                        {isGeneratingPDF ? (
-                          <div className="text-md print:text-[14px]">{item.name}</div>
+              </div>
+            )}
+          </td>
+          <td className="border text-center py-1">5155</td>
+          <td className="border text-center py-1">
+            {isGeneratingPDF ? (
+              <div className="text-md print:text-[14px]">{item.quantity}</div>
+            ) : (
+              <input
+                type="number"
+                className="w-16 text-md print:text-[14px] px-2 py-1 border rounded-sm"
+                value={item.quantity}
+                onChange={(e) =>
+                  handleValueChange(index, "quantity", Number(e.target.value))
+                }
+              />
+            )}
+          </td>
+          <td className="border text-center py-1">
+            {isGeneratingPDF ? (
+              <div className="text-md print:text-[14px]">₹{item.price}</div>
+            ) : (
+              <input
+                type="number"
+                className="w-20 text-md print:text-[14px] px-2 py-1 border rounded-sm"
+                value={item.price}
+                onChange={(e) =>
+                  handleValueChange(index, "price", Number(e.target.value))
+                }
+              />
+            )}
+          </td>
+          <td className="border text-center py-1">
+            {isGeneratingPDF ? (
+              <div className="text-md print:text-[14px]">
+                {item.discount ? `${item.discount}%` : "—"}
+              </div>
+            ) : (
+              <select
+                className="text-md print:text-[14px] border px-1 py-0"
+                value={item.discount || 0}
+                onChange={(e) => {
+                  const updatedItems = [...editableItems];
+                  const discount = Number(e.target.value);
+                  updatedItems[index].discount = discount;
+                  const discountedPrice =
+                    updatedItems[index].price -
+                    (updatedItems[index].price * discount) / 100;
+                  updatedItems[index].totalPrice =
+                    discountedPrice * updatedItems[index].quantity;
+                  setEditableItems(updatedItems);
+                }}
+              >
+                <option value={0}>0%</option>
+                <option value={1}>1%</option>
+                <option value={2}>2%</option>
+                <option value={3}>3%</option>
+                <option value={4}>4%</option>
+                <option value={5}>5%</option>
+              </select>
+            )}
+          </td>
+          <td className="border text-center py-1 font-semibold">
+            ₹{item.totalPrice.toFixed(2)}
+          </td>
+          {!isGeneratingPDF && (
+            <td className="border text-center py-1 action-cell">
+              <button
+                onClick={() => deleteRow(index)}
+                className="text-red-500 text-sm print:text-[14px]"
+              >
+                ❌
+              </button>
+            </td>
+          )}
+        </tr>
+      ))}
 
-                        ) : (
-                          <div className="relative">
-                            <input
-                              className="w-full text-md print:text-[14px] px-2 py-1 border rounded-sm bg-white"
-                              value={item.name}
-                              onChange={(e) =>
-                                handleProductNameChange(index, e.target.value)
-                              }
-                            />
-                            {/* Dropdown */}
-                            {productSuggestions.length > 0 &&
-                              index === editableItems.length - 1 && (
-                                <ul className="absolute top-full left-0 mt-1 bg-white border w-full shadow z-50 max-h-40 overflow-y-auto text-left">
-                                  {productSuggestions.map((prod, i) => (
-                                    <li
-                                      key={i}
-                                      className="px-2 py-1 text-md print:text-[14px] hover:bg-gray-100 cursor-pointer"
-                                      onClick={() =>
-                                        handleSuggestionSelect(index, prod)
-                                      }
-                                    >
-                                      {prod.productName} - ₹{prod.price}
-                                    </li>
-                                  ))}
-                                </ul>
-                              )}
-                          </div>
-                        )}
-                      </td>
+    {/* ✅ Total Pieces Row */}
+    <tr>
+      <td className="border text-right font-semibold py-1" colSpan={3}>
+        Total
+      </td>
+      <td className="border text-center font-bold py-1">{totalQuantity}</td>
+      <td className="border" colSpan={4}></td>
+    </tr>
+  </tbody>
+</table>
 
-                      <td className="border text-center py-1">5155</td>
-
-                      <td className="border text-center py-1">
-                        {isGeneratingPDF ? (
-                          <div className="text-md print:text-[14px]">{item.quantity}</div>
-                        ) : (
-                          <input
-                            type="number"
-                            className="w-16 text-md print:text-[14px] px-2 py-1 border rounded-sm"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              handleValueChange(
-                                index,
-                                "quantity",
-                                Number(e.target.value)
-                              )
-                            }
-                          />
-                        )}
-                      </td>
-
-                      <td className="border text-center py-1">
-                        {isGeneratingPDF ? (
-                          <div className="text-md print:text-[14px]">₹{item.price}</div>
-                        ) : (
-                          <input
-                            type="number"
-                            className="w-20 text-md print:text-[14px] px-2 py-1 border rounded-sm"
-                            value={item.price}
-                            onChange={(e) =>
-                              handleValueChange(
-                                index,
-                                "price",
-                                Number(e.target.value)
-                              )
-                            }
-                          />
-                        )}
-                      </td>
-                      <td className="border text-center py-1">
-                        {isGeneratingPDF ? (
-                          <div className="text-md print:text-[14px]">
-                            {item.discount ? `${item.discount}%` : "—"}
-                          </div>
-                        ) : (
-                          <select
-                            className="text-md print:text-[14px] border px-1 py-0"
-                            value={item.discount || 0}
-                            onChange={(e) => {
-                              const updatedItems = [...editableItems];
-                              const discount = Number(e.target.value);
-                              updatedItems[index].discount = discount;
-                              const discountedPrice =
-                                updatedItems[index].price -
-                                (updatedItems[index].price * discount) / 100;
-                              updatedItems[index].totalPrice =
-                                discountedPrice * updatedItems[index].quantity;
-                              setEditableItems(updatedItems);
-                            }}
-                          >
-                            <option value={0}>0%</option>
-                            <option value={1}>1%</option>
-                            <option value={2}>2%</option>
-                            <option value={3}>3%</option>
-                            <option value={4}>4%</option>
-                            <option value={5}>5%</option>
-                          </select>
-                        )}
-                      </td>
-
-                      <td className="border text-center py-1 font-semibold">
-                        ₹{item.totalPrice.toFixed(2)}
-                      </td>
-                      {!isGeneratingPDF && (
-                        <td className="border text-center py-1 action-cell">
-                          <button
-                            onClick={() => deleteRow(index)}
-                            className="text-red-500 text-sm print:text-[14px]"
-                          >
-                            ❌
-                          </button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
 
             {/* ✅ GST + Discount + Final Total WITH Amount in Words SIDE-BY-SIDE */}
             <div className="w-full flex justify-between mt-2">
@@ -1138,6 +1136,8 @@ setOldPendingAdjusted(0);
                     <div className="border border-gray-400 px-2 py-1 text-right font-bold">
                       ₹{totalAmount.toFixed(2)}
                     </div>
+           
+
                   </div>
                 </div>
               </div>

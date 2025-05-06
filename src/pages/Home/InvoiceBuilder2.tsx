@@ -172,6 +172,11 @@ const InvoiceBuilder2: React.FC = () => {
     (sum, item) => sum + item.totalPrice,
     0
   );
+
+  const totalQuantity = editableItems
+  .filter(item => item.name.trim() !== "" && item.price > 0 && item.quantity > 0)
+  .reduce((sum, item) => sum + item.quantity, 0);
+
   const discountAmount = (finalPrice * discountPercent) / 100;
 
   const priceAfterDiscount = finalPrice - discountAmount;
@@ -936,6 +941,13 @@ const InvoiceBuilder2: React.FC = () => {
                       )}
                     </tr>
                   ))}
+                     <tr>
+      <td className="border text-right font-semibold py-1" colSpan={3}>
+        Total
+      </td>
+      <td className="border text-center font-bold py-1">{totalQuantity}</td>
+      <td className="border" colSpan={4}></td>
+    </tr>
               </tbody>
             </table>
 

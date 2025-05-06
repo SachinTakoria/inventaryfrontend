@@ -148,6 +148,12 @@ const InvoiceViewer2 = ({ invoiceId }: Props) => {
               </tr>
             );
           })}
+          <tr>
+  <td colSpan={3} className="border px-2 py-1 text-right font-bold">Total Pieces</td>
+  <td className="border px-2 py-1 text-center font-bold">{invoice.totalQuantity} pcs</td>
+  <td colSpan={3} className="border px-2 py-1"></td>
+</tr>
+
         </tbody>
       </table>
 
